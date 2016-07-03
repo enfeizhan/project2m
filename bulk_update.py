@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas_datareader.data as web
+import logging
 from pandas_share_access import get_n_days_backwards
 from pandas.tseries.offsets import CustomBusinessDay, DateOffset
 from utils import ASXTradingCalendar
@@ -25,6 +26,11 @@ asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
 flag_col_name = 'is_last_11_day'
 csv_back_days = 10
 
+logging.basicConfig(
+    filename='bulk_update.log',
+    format='%(asctime)s %(levelname)s: %(message)s',
+    level=logging.INFO
+)
 
 def update_company_shares(
         db_url,
@@ -49,6 +55,7 @@ def update_company_shares(
     else:
         # when given codes, just split them to get a list
         codes_list = codes.split(',')
+    logging.info('There are {n} shares to update.'.format(n=len(codes_list)))
     if back_days is not None:
         # given back_days, assume end_date is today
         end_datetime = pd.datetime.now()
@@ -72,8 +79,6 @@ def update_company_shares(
         start_datetime,
         end_datetime
     ).to_frame()
-    with open('sharecounts.txt', 'w') as f:
-        f.write(str(res.shape[0]))
     res = res.reset_index()
     # find the last day for the purpose of finding last 11 days
     last_day = res.Date.max()
@@ -81,6 +86,7 @@ def update_company_shares(
     # find this year to find the file
     this_year = str(last_day.year)
     res = res.rename(columns={'minor': 'code'})
+    logging.info('{n} shares updated.'.format(n=res.code.nunique()))
     try:
         # read this year's data
         yearly_dat = pd.read_csv(db_url+this_year+'price.csv')
@@ -121,6 +127,7 @@ def update_sectors(
     else:
         # when given codes, just split them to get a list
         codes_list = codes.split(',')
+    logging.info('There are {n} sectors to update.'.format(n=len(codes_list)))
 
     if back_days is not None:
         # given back_days, assume end_date is today
@@ -152,6 +159,7 @@ def update_sectors(
     # find this year to find the file
     this_year = str(last_day.year)
     res = res.rename(columns={'minor': 'code'})
+    logging.info('{n} sectors updated.'.format(n=res.code.nunique()))
     try:
         yearly_dat = pd.read_csv(db_url+this_year+'sector_price.csv')
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
@@ -179,26 +187,70 @@ if __name__ == '__main__':
     arguments = docopt(cmd_doc)
     if arguments['share']:
         if arguments['auto']:
+            if arguments['--business'] == 'True':
+                logging.info(
+                    'Auto bulk updating shares back ' +
+                    '{n} business day(s) from now.'.format(
+                        n=arguments['--share-back-days']
+                    )
+                )
+            else:
+                logging.info(
+                    'Auto bulk updating shares back ' +
+                    '{n} day(s) from now.'.format(
+                        n=arguments['--share-back-days']
+                    )
+                )
             update_company_shares(
                 db_url=arguments['--share-url'],
                 codes=arguments['--codes'],
                 back_days=int(arguments['--share-back-days']),
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=bool(arguments['--business'])
             )
         elif arguments['manual']:
+            if arguments['--business'] == 'True':
+                logging.info(
+                    'Manual bulk updating shares between' +
+                    ' {start} and {end} (business days only).'.format(
+                        start=arguments['<start>'],
+                        end=arguments['<end>']
+                    )
+                )
+            else:
+                logging.info(
+                    'Manual bulk updating shares between' +
+                    ' {start} and {end}.'.format(
+                        start=arguments['<start>'],
+                        end=arguments['<end>']
+                    )
+                )
             update_company_shares(
                 db_url=arguments['--share-url'],
                 codes=arguments['--codes'],
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=bool(arguments['--business'])
             )
         else:
             raise SystemError('Wrong command combination.')
     elif arguments['sector']:
         if arguments['auto']:
+            if arguments['--business'] == 'True':
+                logging.info(
+                    'Auto bulk updating sectors back ' +
+                    '{n} business day(s) from now'.format(
+                        n=arguments['--share-back-days']
+                    )
+                )
+            else:
+                logging.info(
+                    'Auto bulk updating sectors back ' +
+                    '{n} day(s) from now.'.format(
+                        n=arguments['--share-back-days']
+                    )
+                )
             update_sectors(
                 db_url=arguments['--sector-url'],
                 codes=arguments['--codes'],
@@ -207,6 +259,22 @@ if __name__ == '__main__':
                 business=arguments['--business']
             )
         elif arguments['manual']:
+            if arguments['--business'] == 'True':
+                logging.info(
+                    'Manual bulk updating sectors between' +
+                    ' {start} and {end} (business days only).'.format(
+                        start=arguments['<start>'],
+                        end=arguments['<end>']
+                    )
+                )
+            else:
+                logging.info(
+                    'Manual bulk updating sectors between' +
+                    ' {start} and {end}.'.format(
+                        start=arguments['<start>'],
+                        end=arguments['<end>']
+                    )
+                )
             update_sectors(
                 db_url=arguments['--sector-url'],
                 codes=arguments['--codes'],
