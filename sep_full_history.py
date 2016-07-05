@@ -1,49 +1,47 @@
 import os
 import time
+import logging
 import pandas as pd
-try:
-    import pandas_datareader.data as web
-except ImportError:
-    print('Using older Pandas version. Stock actions affected!')
-    import pandas.io.data as web
+import pandas_datareader.data as web
+from docopt import docopt
 from pandas.tseries.offsets import CDay, DateOffset
 from utils import ASXTradingCalendar
 today = pd.datetime.now()
 start = pd.datetime(1995, 1, 1)
 asx_dayoffset = CDay(calendar=ASXTradingCalendar())
+logging.basicConfig(
+    filename='full_history.log',
+    format='%(asctime)s %(levelname)s: %(message)s',
+    level=logging.INFO
+)
+cmd_doc = '''
+    Usage:
+        sep_full_history share [--asx | --codes=c] [--share-url=du] [--source=source] [--silent=s] [--start-id=id]
+        sep_full_history sector [--xlsx | --codes=c] [--sector-url=du] [--source=source] [--silent=s] [--start-id=id]
 
-
-def get_n_days_backwards(
-        company_codes,
-        source='yahoo',
-        back_days=1,
-        end_datetime=today,
-        business=True,
-        ):
-    if business:
-        start_datetime = end_datetime - back_days * asx_dayoffset
-    else:
-        start_datetime = end_datetime - back_days * DateOffset()
-    datapanel = web.DataReader(
-        company_codes,
-        source,
-        start_datetime,
-        end_datetime)
-    return datapanel.to_frame()
+    Options:
+        --asx  From ASX homepage.
+        --xlsx  From xlsx file.
+        --codes=c  Manual input codes, separated by commas.
+        --sector-url=du  Where to store sector data [default: ~/Dropbox/Project2M/ASX/ASXYearlySectorConsolidation]
+        --share-url=du  Where to store share data [default: ~/Dropbox/Project2M/ASXCompanyHistory/]
+        --source=source  Where to download the data [default: yahoo].
+        --silent=s  Whether output details during progress [default: True].
+        --start-id=id  Start ID if start again [default: 1].
+'''
 
 
 def get_full_history(
         company_codes,
-        source='yahoo',
-        silent=True,
-        start_id=1
+        db_url,
+        source,
+        silent,
+        start_id
         ):
     # get full history for each company one by one
     # and install in separate files
-    if isinstance(company_codes, str):
-        company_codes = [company_codes]
+    success = 0
     ncodes = len(company_codes)
-    failed_list = []
     for ncode, code in enumerate(company_codes):
         if ncode < start_id - 1:
             continue
@@ -62,112 +60,87 @@ def get_full_history(
                 start,
                 today)
         except OSError:
+            logging.info('{} failed!'.format(code))
             print('{} failed!'.format(code))
-            failed_list.append(code)
             continue
         try:
             dataframe.loc[:, 'code'] = code
         except ValueError:
+            logging.info('{} failed with empty data!'.format(code))
             print('{} empty data!'.format(code))
-            failed_list.append(code)
             continue
-        dataframe.to_csv(code+'.csv')
-    return failed_list
-
-
-def update_full_history(
-        company_codes,
-        url='./',
-        source='yahoo',
-        silent=True,
-        start_id=1,
-        ):
-    # given string convert to a list
-    if isinstance(company_codes, str):
-        company_codes = [company_codes]
-    ncodes = len(company_codes)
-    failed_list = []
-    for ncode, code in enumerate(company_codes):
-        if ncode < start_id - 1:
-            continue
-        time.sleep(.1)
-        if not silent:
-            print(
-                '{ncode}/{ncodes}. {code} ...'.format(
-                    ncode=ncode+1,
-                    ncodes=ncodes,
-                    code=code)
-                )
-        # if file exists, update it
-        if os.path.isfile(url+code+'.csv'):
-            # get the last date
-            old = pd.read_csv(url+code+'.csv')
-            old_datetime_str = old.iloc[-1, 0]
-            year = int(old_datetime_str[:4])
-            month = int(old_datetime_str[5:7])
-            day = int(old_datetime_str[8:])
-            update_start = pd.datetime(year, month, day) + DateOffset()
-            try:
-                dataframe = web.DataReader(
-                    code,
-                    source,
-                    update_start,
-                    today)
-            except OSError:
-                print('{} failed!'.format(code))
-                failed_list.append(code)
-                continue
-            try:
-                dataframe.loc[:, 'code'] = code
-            except ValueError:
-                print('{} empty return'.format(code))
-                failed_list.append(code)
-                continue
-            dataframe.to_csv(url+code+'.csv', header=False, mode='a')
-        # if file doesn't exist, install in a new
-        else:
-            try:
-                dataframe = web.DataReader(
-                    code,
-                    source,
-                    start,
-                    today)
-            except OSError:
-                print('{} failed!'.format(code))
-                failed_list.append(code)
-                continue
-            if dataframe.empty:
-                print('{} empty data!'.format(code))
-            else:
-                dataframe.to_csv(url+code+'.csv')
-    return failed_list
+        logging.info('{} downloaded!'.format(code))
+        dataframe.to_csv(os.path.join(db_url, code)+'.csv')
+        success += 1
+    return success
 
 
 if __name__ == '__main__':
-    asx = pd.read_excel('sector_codes.xlsx')
-    # company_codes = (asx.loc[:, 'ASX code'] + '.AX').tolist()
-    # res = get_n_days_backwards(
-    #     company_codes,
-    #     source='yahoo',
-    #     back_days=11,
-    #     end_datetime=today,
-    #     business=True,
-    #     )
-    # res.to_csv('full.csv')
-    # failed_list = get_full_history(company_codes, silent=False)
-    # update_full_history(['ZYL.AX'], silent=False)
-    # res = update_full_history(
-    #     company_codes,
-    #     url='/Users/feizhan/Dropbox/Project2M/ASXCompanyHistory/',
-    #     source='yahoo',
-    #     silent=False,
-    #     start_id=1
-    #     )
-    sector_codes = asx.sector_code.tolist()
-    res = update_full_history(
-        sector_codes,
-        url='./',
-        source='yahoo',
-        silent=False,
-        start_id=1
-        )
+    arguments = docopt(cmd_doc)
+    if arguments['share']:
+        if arguments['--asx']:
+            asx = pd.read_csv(
+                'http://www.asx.com.au/asx/research/ASXListedCompanies.csv',
+                skiprows=1
+            )
+            codes_list = (asx.loc[:, 'ASX code'] + '.AX').tolist()
+            ncodes = len(codes_list)
+            logging.info('There are {} shares to download.'.format(ncodes))
+            success = get_full_history(
+                codes_list,
+                arguments['--share-url'],
+                arguments['--source'],
+                bool(arguments['--silent']),
+                int(arguments['--start-id'])
+            )
+            logging.info(
+                'There are {} shares downloaded '.format(success) +
+                'successfully. Failed {}.\n'.format(ncodes-success)
+            )
+        elif arguments['--codes']:
+            codes_list = arguments['--codes'].split(',')
+            ncodes = len(codes_list)
+            logging.info('There are {} shares to download.'.format(ncodes))
+            success = get_full_history(
+                codes_list,
+                arguments['--share-url'],
+                arguments['--source'],
+                bool(arguments['--silent']),
+                int(arguments['--start-id'])
+            )
+            logging.info(
+                'There are {} sectors downloaded '.format(success) +
+                'successfully. Failed {}.\n'.format(ncodes-success)
+            )
+    elif arguments['sector']:
+        if arguments['--xlsx']:
+            asx = pd.read_excel('sector_codes.xlsx')
+            codes_list = (asx.loc[:, 'ASX code'] + '.AX').tolist()
+            ncodes = len(codes_list)
+            logging.info('There are {} sectors to download.'.format(ncodes))
+            get_full_history(
+                codes_list,
+                arguments['--sector-url'],
+                arguments['--source'],
+                bool(arguments['--silent']),
+                int(arguments['--start-id'])
+            )
+            logging.info(
+                'There are {} sectors downloaded '.format(success) +
+                'successfully. Failed {}.\n'.format(ncodes-success)
+            )
+        elif arguments['--codes']:
+            codes_list = arguments['--codes'].split(',')
+            ncodes = len(codes_list)
+            logging.info('There are {} shares to download.'.format(ncodes))
+            success = get_full_history(
+                arguments['--codes'].split(','),
+                arguments['--sector-url'],
+                arguments['--source'],
+                bool(arguments['--silent']),
+                int(arguments['--start-id'])
+            )
+            logging.info(
+                'There are {} sectors downloaded '.format(success) +
+                'successfully. Failed {}.\n'.format(ncodes-success)
+            )
