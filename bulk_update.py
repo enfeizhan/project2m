@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas_datareader.data as web
 import logging
-from pandas_share_access import get_n_days_backwards
 from pandas.tseries.offsets import CustomBusinessDay, DateOffset
 from utils import ASXTradingCalendar
 from docopt import docopt
