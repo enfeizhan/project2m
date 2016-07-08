@@ -9,7 +9,7 @@ cmd_doc = '''
       bulk_update share auto [--share-back-days=days] [--business=b] [--share-url=url] [--source=source] [--codes=codes]
       bulk_update share manual <start> <end> [--business=b] [--share-url=url] [--source=source] [--codes=codes]
       bulk_update sector auto [--sector-back-days=days] [--business=b] [--sector-url=url] [--source=source] [--codes=codes]
-      bulk_update sector manual <start> <end> [--business=b] [--sectors-url=url] [--source=source] [--codes=codes]
+      bulk_update sector manual <start> <end> [--business=b] [--sector-url=url] [--source=source] [--codes=codes]
 
     Options:
       -h --help     Show this screen.
