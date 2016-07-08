@@ -5,8 +5,8 @@ Steps to extract data on Windows:
 3. go to repo folder:
    \# cd Documents/project2m
 4. daily updating
-   \# python bulk_update.py sector --sector-url=D:\Dropbox\Paresh (shared with Fei)\ASXYearlySectorConsolidation
-   \# python bulk_update.py share --share-url=D:\Dropbox\Paresh (shared with Fei)\ASXYearlyCompanyConsolidation
+   \# python bulk_update.py sector auto --sector-url=D:\Dropbox\Paresh (shared with Fei)\ASXYearlySectorConsolidation
+   \# python bulk_update.py share auto --share-url=D:\Dropbox\Paresh (shared with Fei)\ASXYearlyCompanyConsolidation
 
 Steps to start jupyter notebook
 1. open dos window
