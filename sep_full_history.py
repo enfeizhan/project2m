@@ -23,7 +23,7 @@ cmd_doc = '''
         --asx  From ASX homepage.
         --xlsx  From xlsx file.
         --codes=c  Manual input codes, separated by commas.
-        --sector-url=du  Where to store sector data [default: ~/Dropbox/Project2M/ASX/ASXYearlySectorConsolidation]
+        --sector-url=du  Where to store sector data [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation]
         --share-url=du  Where to store share data [default: ~/Dropbox/Project2M/ASXCompanyHistory/]
         --source=source  Where to download the data [default: yahoo].
         --silent=s  Whether output details during progress [default: True].
@@ -115,10 +115,10 @@ if __name__ == '__main__':
     elif arguments['sector']:
         if arguments['--xlsx']:
             asx = pd.read_excel('sector_codes.xlsx')
-            codes_list = (asx.loc[:, 'ASX code'] + '.AX').tolist()
+            codes_list = asx.loc[:, 'sector_code'].tolist()
             ncodes = len(codes_list)
             logging.info('There are {} sectors to download.'.format(ncodes))
-            get_full_history(
+            success = get_full_history(
                 codes_list,
                 arguments['--sector-url'],
                 arguments['--source'],
