@@ -1,3 +1,5 @@
+import datetime
+import requests_cache
 import pandas as pd
 import pandas_datareader.data as web
 import logging
@@ -39,6 +41,7 @@ def update_company_shares(
         end_date=None,
         source=None,
         business=None,
+        session=None,
         ):
     if codes is None:
         # read the full company list from asx home page
@@ -76,7 +79,8 @@ def update_company_shares(
         codes_list,
         source,
         start_datetime,
-        end_datetime
+        end_datetime,
+        session=session
     ).to_frame()
     res = res.reset_index()
     # find the last day for the purpose of finding last 11 days
@@ -151,7 +155,8 @@ def update_sectors(
         codes_list,
         source,
         start_datetime,
-        end_datetime
+        end_datetime,
+        session=session
     ).to_frame()
     res = res.reset_index()
     # find the last day for the purpose of finding last 11 days
@@ -186,6 +191,12 @@ def update_sectors(
 
 if __name__ == '__main__':
     arguments = docopt(cmd_doc)
+    expire_after = datetime.timedelta(hours=3)
+    session = requests_cache.CachedSession(
+        cache_name='cache',
+        backend='sqlite',
+        expire_after=expire_after
+    )
     if arguments['share']:
         if arguments['auto']:
             if arguments['--business'] == 'True':
@@ -207,7 +218,8 @@ if __name__ == '__main__':
                 codes=arguments['--codes'],
                 back_days=int(arguments['--share-back-days']),
                 source=arguments['--source'],
-                business=bool(arguments['--business'])
+                business=bool(arguments['--business']),
+                session=session
             )
         elif arguments['manual']:
             if arguments['--business'] == 'True':
@@ -232,7 +244,8 @@ if __name__ == '__main__':
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=bool(arguments['--business'])
+                business=bool(arguments['--business']),
+                session=session
             )
         else:
             raise SystemError('Wrong command combination.')
@@ -257,7 +270,8 @@ if __name__ == '__main__':
                 codes=arguments['--codes'],
                 back_days=int(arguments['--sector-back-days']),
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=arguments['--business'],
+                session=session
             )
         elif arguments['manual']:
             if arguments['--business'] == 'True':
@@ -282,7 +296,8 @@ if __name__ == '__main__':
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=arguments['--business'],
+                session=session
             )
         else:
             raise SystemError('Wrong command combination.')
