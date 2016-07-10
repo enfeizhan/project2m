@@ -92,6 +92,8 @@ def update_company_shares(
         # parsing the date
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
         # append data to the file of this year
+        # res in the first place so the duplicate from old dataset will
+        # be dropped
         res = pd.concat([res, yearly_dat])
         # drop duplicates sometimes
         res = res.drop_duplicates(['Date', 'code'])
