@@ -1,5 +1,7 @@
 import os
 import time
+import datetime
+import requests_cache
 import logging
 import pandas as pd
 import pandas_datareader.data as web
@@ -36,7 +38,8 @@ def get_full_history(
         db_url,
         source,
         silent,
-        start_id
+        start_id,
+        session
         ):
     # get full history for each company one by one
     # and install in separate files
@@ -58,7 +61,8 @@ def get_full_history(
                 code,
                 source,
                 start,
-                today)
+                today,
+                session=session)
         except OSError:
             logging.info('{} failed!'.format(code))
             print('{} failed!'.format(code))
@@ -77,6 +81,12 @@ def get_full_history(
 
 if __name__ == '__main__':
     arguments = docopt(cmd_doc)
+    expire_after = datetime.timedelta(hours=3)
+    session = requests_cache.CachedSession(
+        cache_name='cache',
+        backend='sqlite',
+        expire_after=expire_after
+    )
     if arguments['share']:
         if arguments['--asx']:
             asx = pd.read_csv(
@@ -91,7 +101,8 @@ if __name__ == '__main__':
                 arguments['--share-url'],
                 arguments['--source'],
                 bool(arguments['--silent']),
-                int(arguments['--start-id'])
+                int(arguments['--start-id']),
+                session
             )
             logging.info(
                 'There are {} shares downloaded '.format(success) +
@@ -106,7 +117,8 @@ if __name__ == '__main__':
                 arguments['--share-url'],
                 arguments['--source'],
                 bool(arguments['--silent']),
-                int(arguments['--start-id'])
+                int(arguments['--start-id']),
+                session
             )
             logging.info(
                 'There are {} sectors downloaded '.format(success) +
@@ -123,7 +135,8 @@ if __name__ == '__main__':
                 arguments['--sector-url'],
                 arguments['--source'],
                 bool(arguments['--silent']),
-                int(arguments['--start-id'])
+                int(arguments['--start-id']),
+                session
             )
             logging.info(
                 'There are {} sectors downloaded '.format(success) +
@@ -138,7 +151,8 @@ if __name__ == '__main__':
                 arguments['--sector-url'],
                 arguments['--source'],
                 bool(arguments['--silent']),
-                int(arguments['--start-id'])
+                int(arguments['--start-id']),
+                session
             )
             logging.info(
                 'There are {} sectors downloaded '.format(success) +
