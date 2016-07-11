@@ -1,3 +1,4 @@
+import os
 import datetime
 import requests_cache
 import pandas as pd
@@ -92,7 +93,9 @@ def update_company_shares(
     logging.info('{n} shares updated.'.format(n=res.code.nunique()))
     try:
         # read this year's data
-        yearly_dat = pd.read_csv(db_url+this_year+'price.csv')
+        yearly_dat = pd.read_csv(
+            os.path.join(db_url, this_year) + 'price.csv'
+        )
         # parsing the date
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
         # append data to the file of this year
@@ -109,12 +112,17 @@ def update_company_shares(
         res = res.sort_index(level=[0, 1])
         res.loc[days_ago:last_day, flag_col_name] = 1
         res = res.sort_index(level=[1, 0])
-        res.to_csv(db_url+this_year+'price.csv')
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'price.csv'
+        )
     except OSError:
         # beginning of a year can't find the file
         # reset to all one
         res.loc[:, flag_col_name] = 1
-        res.to_csv(db_url+this_year+'price.csv', index=False)
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'price.csv',
+            index=False
+        )
     
 
 def update_sectors(
@@ -168,7 +176,9 @@ def update_sectors(
     res = res.rename(columns={'minor': 'code'})
     logging.info('{n} sectors updated.'.format(n=res.code.nunique()))
     try:
-        yearly_dat = pd.read_csv(db_url+this_year+'sector_price.csv')
+        yearly_dat = pd.read_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv'
+        )
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
         # append data to the file of this year
         res = pd.concat([res, yearly_dat])
@@ -182,12 +192,17 @@ def update_sectors(
         res = res.sort_index(level=[0, 1])
         res.loc[days_ago:last_day, flag_col_name] = 1
         res = res.sort_index(level=[1, 0])
-        res.to_csv(db_url+this_year+'sector_price.csv')
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv'
+        )
     except OSError:
         # beginning of a year can't find the file
         # reset to all one
         res.loc[:, flag_col_name] = 1
-        res.to_csv(db_url+this_year+'sector_price.csv', index=False)
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv',
+            index=False
+        )
 
 
 if __name__ == '__main__':
