@@ -125,6 +125,7 @@ def update_sectors(
         end_date=None,
         source=None,
         business=None,
+        session=None,
         ):
     if codes is None:
         asx = pd.read_excel('sector_codes.xlsx')
@@ -255,14 +256,14 @@ if __name__ == '__main__':
                 logging.info(
                     'Auto bulk updating sectors back ' +
                     '{n} business day(s) from now'.format(
-                        n=arguments['--share-back-days']
+                        n=arguments['--sector-back-days']
                     )
                 )
             else:
                 logging.info(
                     'Auto bulk updating sectors back ' +
                     '{n} day(s) from now.'.format(
-                        n=arguments['--share-back-days']
+                        n=arguments['--sector-back-days']
                     )
                 )
             update_sectors(
