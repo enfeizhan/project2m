@@ -10,7 +10,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
     level=logging.INFO
 )
-db_url = '~/Dropbox/Project2M/Sentiment'
+db_url = os.path.expanduser('~/Dropbox/Project2M/Sentiment')
 # cmd_doc = '''
 #     Usage:
 #       bulk_update share auto [--share-back-days=days] [--business=b] [--share-url=url] [--source=source] [--codes=codes]
