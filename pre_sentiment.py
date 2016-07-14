@@ -29,12 +29,13 @@ db_url = os.path.expanduser('~/Dropbox/Project2M/Sentiment')
 #       --source=source  Data source [default: yahoo].
 # '''
 today = pd.datetime.today()
-today = pd.datetime(today.year, today.month, today.day)
+year = today.year
+month = today.month
+day = today.day
+today = '{:4d}-{:02d}-{:02d}'.format(year, month, day)
 
 
-def scrape_motley_fool(
-        db_url
-        ):
+def scrape_motley_fool():
     date_pattern = r'.*\| ([a-zA-Z]* \d{1,2}, \d{4})'
     asx_pattern = r'\(ASX: ([A-Z0-9]{3})\)'
     index_pattern = r'\(Index: (\^[A-Z0-9]{4})\)'
@@ -61,31 +62,75 @@ def scrape_motley_fool(
         art_text = driver.find_element_by_id('full_content').text
         code_list += list(set(re.findall(asx_pattern, art_text)))
         index_list += list(set(re.findall(index_pattern, art_text)))
+    code_counts = save_counts(
+        code_list,
+        'Motley Fool',
+        today,
+    )
+    index_counts = save_counts(
+        index_list,
+        'Motley Fool',
+        today,
+    )
+    driver.quit()
+    return code_counts, index_counts
+
+
+def scrape_hotcopper_forum():
+    npage = 1
+    is_the_day = True
+    code_list = []
+    driver = webdriver.PhantomJS()
+    driver.set_window_size(1120, 550)
+    driver.get('http://hotcopper.com.au/discussions/asx---by-stock/')
+    most_dis = driver.find_element_by_id('most-discussed-stocks').text
+    most_dis = most_dis.split('\n')
+    code_list = most_dis[0::3]
+    count_list = most_dis[2::3]
+    res_df = pd.DataFrame(
+        {'asx code': code_list,
+         'counts': count_list}
+    )
+    res_df.loc[:, 'source'] = 'Hotcopper Forum'
+    res_df.loc[:, 'date'] = today
+    res_df.to_csv('counts.csv', index=False)
+    driver.quit()
+    return res_df
+
+
+def save_counts(
+        code_list,
+        source,
+        date,
+        ):
     code_series = pd.Series(code_list)
     code_counts = code_series.value_counts()
     code_counts = code_counts.reset_index()
-    code_counts.loc[:, 'source'] = 'Motley Fool'
-    code_counts.loc[:, 'date'] = pd.datetime(today.year, today.month, today.day)
+    code_counts.loc[:, 'source'] = source
+    code_counts.loc[:, 'date'] = date
     code_counts.columns = ['asx code', 'counts', 'source', 'date']
-    dat_file = os.path.join(db_url, 'code_counts.csv')
-    if os.path.isfile(dat_file):
-        dat = pd.read_csv(dat_file)
-        code_counts = pd.concat([dat, code_counts])
-    code_counts.to_csv(dat_file, index=False)
-    index_series = pd.Series(index_list)
-    index_counts = index_series.value_counts()
-    index_counts = index_counts.reset_index()
-    index_counts.loc[:, 'source'] = 'Motley Fool'
-    index_counts.loc[:, 'date'] = pd.datetime(today.year, today.month, today.day)
-    index_counts.columns = ['asx code', 'counts', 'source', 'date']
-    dat_file = os.path.join(db_url, 'index_counts.csv')
-    if os.path.isfile(dat_file):
-        dat = pd.read_csv(dat_file)
-        index_counts = pd.concat([dat, index_counts])
-    index_counts.to_csv(dat_file, index=False)
-    driver.quit()
+    return code_counts
 
 
 if __name__ == '__main__':
     # arguments = docopt(cmd_doc)
-    scrape_motley_fool(db_url)
+    code_counts, index_counts = scrape_motley_fool()
+    code_counts.to_csv(
+        os.path.join(db_url, 'code_counts.csv'),
+        index=False,
+        mode='a',
+        header=None
+    )
+    index_counts.to_csv(
+        os.path.join(db_url, 'index_counts.csv'),
+        index=False,
+        mode='a',
+        header=None
+    )
+    code_counts = scrape_hotcopper_forum()
+    code_counts.to_csv(
+        os.path.join(db_url, 'code_counts.csv'),
+        index=False,
+        mode='a',
+        header=None
+    )
