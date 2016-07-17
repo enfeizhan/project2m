@@ -1,3 +1,6 @@
+import os
+import datetime
+import requests_cache
 import pandas as pd
 import pandas_datareader.data as web
 import logging
@@ -39,6 +42,7 @@ def update_company_shares(
         end_date=None,
         source=None,
         business=None,
+        session=None,
         ):
     if codes is None:
         # read the full company list from asx home page
@@ -76,7 +80,8 @@ def update_company_shares(
         codes_list,
         source,
         start_datetime,
-        end_datetime
+        end_datetime,
+        session=session
     ).to_frame()
     res = res.reset_index()
     # find the last day for the purpose of finding last 11 days
@@ -88,10 +93,14 @@ def update_company_shares(
     logging.info('{n} shares updated.'.format(n=res.code.nunique()))
     try:
         # read this year's data
-        yearly_dat = pd.read_csv(db_url+this_year+'price.csv')
+        yearly_dat = pd.read_csv(
+            os.path.join(db_url, this_year) + 'price.csv'
+        )
         # parsing the date
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
         # append data to the file of this year
+        # res in the first place so the duplicate from old dataset will
+        # be dropped
         res = pd.concat([res, yearly_dat])
         # drop duplicates sometimes
         res = res.drop_duplicates(['Date', 'code'])
@@ -103,12 +112,17 @@ def update_company_shares(
         res = res.sort_index(level=[0, 1])
         res.loc[days_ago:last_day, flag_col_name] = 1
         res = res.sort_index(level=[1, 0])
-        res.to_csv(db_url+this_year+'price.csv')
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'price.csv'
+        )
     except OSError:
         # beginning of a year can't find the file
         # reset to all one
         res.loc[:, flag_col_name] = 1
-        res.to_csv(db_url+this_year+'price.csv', index=False)
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'price.csv',
+            index=False
+        )
     
 
 def update_sectors(
@@ -119,6 +133,7 @@ def update_sectors(
         end_date=None,
         source=None,
         business=None,
+        session=None,
         ):
     if codes is None:
         asx = pd.read_excel('sector_codes.xlsx')
@@ -149,7 +164,8 @@ def update_sectors(
         codes_list,
         source,
         start_datetime,
-        end_datetime
+        end_datetime,
+        session=session
     ).to_frame()
     res = res.reset_index()
     # find the last day for the purpose of finding last 11 days
@@ -160,7 +176,9 @@ def update_sectors(
     res = res.rename(columns={'minor': 'code'})
     logging.info('{n} sectors updated.'.format(n=res.code.nunique()))
     try:
-        yearly_dat = pd.read_csv(db_url+this_year+'sector_price.csv')
+        yearly_dat = pd.read_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv'
+        )
         yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
         # append data to the file of this year
         res = pd.concat([res, yearly_dat])
@@ -174,16 +192,27 @@ def update_sectors(
         res = res.sort_index(level=[0, 1])
         res.loc[days_ago:last_day, flag_col_name] = 1
         res = res.sort_index(level=[1, 0])
-        res.to_csv(db_url+this_year+'sector_price.csv')
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv'
+        )
     except OSError:
         # beginning of a year can't find the file
         # reset to all one
         res.loc[:, flag_col_name] = 1
-        res.to_csv(db_url+this_year+'sector_price.csv', index=False)
+        res.to_csv(
+            os.path.join(db_url, this_year) + 'sector_price.csv',
+            index=False
+        )
 
 
 if __name__ == '__main__':
     arguments = docopt(cmd_doc)
+    expire_after = datetime.timedelta(hours=3)
+    session = requests_cache.CachedSession(
+        cache_name='cache',
+        backend='sqlite',
+        expire_after=expire_after
+    )
     if arguments['share']:
         if arguments['auto']:
             if arguments['--business'] == 'True':
@@ -205,7 +234,8 @@ if __name__ == '__main__':
                 codes=arguments['--codes'],
                 back_days=int(arguments['--share-back-days']),
                 source=arguments['--source'],
-                business=bool(arguments['--business'])
+                business=bool(arguments['--business']),
+                session=session
             )
         elif arguments['manual']:
             if arguments['--business'] == 'True':
@@ -230,7 +260,8 @@ if __name__ == '__main__':
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=bool(arguments['--business'])
+                business=bool(arguments['--business']),
+                session=session
             )
         else:
             raise SystemError('Wrong command combination.')
@@ -240,14 +271,14 @@ if __name__ == '__main__':
                 logging.info(
                     'Auto bulk updating sectors back ' +
                     '{n} business day(s) from now'.format(
-                        n=arguments['--share-back-days']
+                        n=arguments['--sector-back-days']
                     )
                 )
             else:
                 logging.info(
                     'Auto bulk updating sectors back ' +
                     '{n} day(s) from now.'.format(
-                        n=arguments['--share-back-days']
+                        n=arguments['--sector-back-days']
                     )
                 )
             update_sectors(
@@ -255,7 +286,8 @@ if __name__ == '__main__':
                 codes=arguments['--codes'],
                 back_days=int(arguments['--sector-back-days']),
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=arguments['--business'],
+                session=session
             )
         elif arguments['manual']:
             if arguments['--business'] == 'True':
@@ -280,7 +312,8 @@ if __name__ == '__main__':
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=arguments['--business']
+                business=arguments['--business'],
+                session=session
             )
         else:
             raise SystemError('Wrong command combination.')
