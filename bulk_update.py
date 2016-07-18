@@ -6,6 +6,7 @@ import pandas_datareader.data as web
 import logging
 from pandas.tseries.offsets import CustomBusinessDay, DateOffset
 from utils import ASXTradingCalendar
+from utils import str2bool
 from docopt import docopt
 cmd_doc = '''
     Usage:
@@ -234,7 +235,7 @@ if __name__ == '__main__':
                 codes=arguments['--codes'],
                 back_days=int(arguments['--share-back-days']),
                 source=arguments['--source'],
-                business=bool(arguments['--business']),
+                business=str2bool(arguments['--business']),
                 session=session
             )
         elif arguments['manual']:
@@ -260,7 +261,7 @@ if __name__ == '__main__':
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
                 source=arguments['--source'],
-                business=bool(arguments['--business']),
+                business=str2bool(arguments['--business']),
                 session=session
             )
         else:
