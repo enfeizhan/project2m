@@ -28,4 +28,8 @@ class ASXTradingCalendar(AbstractHolidayCalendar):
                 observance=my_next_monday_or_tuesday),
         Holiday('Boxing Day', month=12, day=26,
                 observance=my_next_monday_or_tuesday),
-        ]
+    ]
+
+
+def str2bool(string):
+    return string == 'True'
