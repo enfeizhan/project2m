@@ -10,20 +10,20 @@ from utils import str2bool
 from docopt import docopt
 cmd_doc = '''
     Usage:
-      bulk_update share auto [--share-back-days=days] [--business=b] [--share-url=url] [--source=source] [--codes=codes]
-      bulk_update share manual <start> <end> [--business=b] [--share-url=url] [--source=source] [--codes=codes]
-      bulk_update sector auto [--sector-back-days=days] [--business=b] [--sector-url=url] [--source=source] [--codes=codes]
-      bulk_update sector manual <start> <end> [--business=b] [--sector-url=url] [--source=source] [--codes=codes]
+      bulk_update share auto [--share-back-days=DAYS] [--business=TF] [--share-url=URL] [--source=SITE] [--codes=CODES]
+      bulk_update share manual <start> <end> [--business=TF] [--share-url=URL] [--source=SITE] [--codes=CODES]
+      bulk_update sector auto [--sector-back-days=DAYS] [--business=TF] [--sector-url=URL] [--source=SITE] [--codes=CODES]
+      bulk_update sector manual <start> <end> [--business=TF] [--sector-url=URL] [--source=SITE] [--codes=CODES]
 
     Options:
       -h --help     Show this screen.
-      -c --codes=codes  ASX codes separated by comma. Mainly for debugging and testing purposes.
-      --share-back-days=days  Days to look backward for shares [default: 0].
-      --sector-back-days=days  Days to look backward for sectors [default: 1].
-      --business=b  Only look at business days [default: True].
-      --share-url=url  URL to find share file [default: ~/Dropbox/Project2M/ASXYearlyCompanyConsolidation/].
-      --sector-url=url  URL to find sector file [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation/].
-      --source=source  Data source [default: yahoo].
+      -c --codes=CODES  ASX codes separated by comma. Mainly for debugging and testing purposes.
+      --share-back-days=DAYS  Days to look backward for shares [default: 0].
+      --sector-back-days=DAYS  Days to look backward for sectors [default: 1].
+      --business=TF  Only look at business days [default: True].
+      --share-url=URL  URL to find share file [default: ~/Dropbox/Project2M/ASXYearlyCompanyConsolidation/].
+      --sector-url=URL  URL to find sector file [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation/].
+      --source=SITE  Data source [default: yahoo].
 '''
 asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
 flag_col_name = 'is_last_11_day'

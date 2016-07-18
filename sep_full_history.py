@@ -18,18 +18,18 @@ logging.basicConfig(
 )
 cmd_doc = '''
     Usage:
-        sep_full_history share [--asx | --codes=c] [--share-url=du] [--source=source] [--silent=s] [--start-id=id]
-        sep_full_history sector [--xlsx | --codes=c] [--sector-url=du] [--source=source] [--silent=s] [--start-id=id]
+        sep_full_history share (--asx | --codes=CODES) [--share-url=URL] [--source=SITE] [--silent=TF] [--start-id=ID]
+        sep_full_history sector (--xlsx | --codes=CODES) [--sector-url=URL>] [--source=SITE] [--silent=TF] [--start-id=ID]
 
     Options:
         --asx  From ASX homepage.
         --xlsx  From xlsx file.
-        --codes=c  Manual input codes, separated by commas.
-        --sector-url=du  Where to store sector data [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation]
-        --share-url=du  Where to store share data [default: ~/Dropbox/Project2M/ASXCompanyHistory/]
-        --source=source  Where to download the data [default: yahoo].
-        --silent=s  Whether output details during progress [default: True].
-        --start-id=id  Start ID if start again [default: 1].
+        --codes=CODES  Manual input codes, separated by commas.
+        --sector-url=URL  Where to store sector data [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation]
+        --share-url=URL  Where to store share data [default: ~/Dropbox/Project2M/ASXCompanyHistory/]
+        --source=SITE  Where to download the data [default: yahoo].
+        --silent=TF  Whether output details during progress [default: True].
+        --start-id=ID  Start ID if start again [default: 1].
 '''
 
 
