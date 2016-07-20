@@ -4,7 +4,7 @@ from sqlalchemy import String
 from sqlalchemy import Date
 from sqlalchemy.ext.declarative import declarative_base
 
-from app import engine
+from .app import engine
 
 Base = declarative_base()
 
@@ -14,11 +14,8 @@ class ColumnsMismatchError(Exception):
 
 
 class PreSentiment(Base):
-    __tablename__ = 'PreSentiment'
-    __table_args__ = {
-        'postgresql_charset': 'utf8',
-        'postgresql_collate': 'utf8_general_ci'
-    }
+    __tablename__ = 'pre_sentiment'
+    pk = Column(Integer, nullable=False, primary_key=True)
     asx_code = Column(String(255), nullable=False)
     counts = Column(Integer, nullable=False)
     source = Column(String(255), nullable=False)

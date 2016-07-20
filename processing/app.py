@@ -1,16 +1,16 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
-import secrets
+from . import secrets
 
 
 def make_sa_conn_str(host, user, password, dbname, **options):
     '''
     postgresql+psycopg2://<username>:<password>@<hostname>/<dbname>[?<options>]
     '''
-    conn_str_template = '''
-    postgresql+psycopg2://{user}:{password}@{host}/{dbname}
-    '''
+    conn_str_template = (
+        'postgresql+psycopg2://{user}:{password}@{host}/{dbname}'
+    )
     postgresql_details = {
         'host': host,
         'user': user,
@@ -31,7 +31,6 @@ sqlalchemy_url = make_sa_conn_str(
     user=secrets.user,
     password=secrets.password,
     dbname=secrets.dbname,
-    charset='utf8'
 )
 
 engine = create_engine(sqlalchemy_url, echo=False)
