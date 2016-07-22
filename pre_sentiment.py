@@ -88,7 +88,7 @@ def scrape_hotcopper_forum():
     code_list = most_dis[0::3]
     count_list = most_dis[2::3]
     res_df = pd.DataFrame(
-        {'asx code': code_list,
+        {'asx_code': code_list,
          'counts': count_list}
     )
     res_df.loc[:, 'source'] = 'Hotcopper Forum'
@@ -108,7 +108,7 @@ def save_counts(
     code_counts = code_counts.reset_index()
     code_counts.loc[:, 'source'] = source
     code_counts.loc[:, 'date'] = date
-    code_counts.columns = ['asx code', 'counts', 'source', 'date']
+    code_counts.columns = ['asx_code', 'counts', 'source', 'date']
     return code_counts
 
 
