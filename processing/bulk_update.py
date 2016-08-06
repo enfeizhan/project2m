@@ -8,23 +8,6 @@ from pandas.tseries.offsets import CustomBusinessDay, DateOffset
 from utils import ASXTradingCalendar
 from utils import str2bool
 from docopt import docopt
-cmd_doc = '''
-    Usage:
-      bulk_update share auto [--share-back-days=DAYS] [--business=TF] [--share-url=URL] [--source=SITE] [--codes=CODES]
-      bulk_update share manual <start> <end> [--business=TF] [--share-url=URL] [--source=SITE] [--codes=CODES]
-      bulk_update sector auto [--sector-back-days=DAYS] [--business=TF] [--sector-url=URL] [--source=SITE] [--codes=CODES]
-      bulk_update sector manual <start> <end> [--business=TF] [--sector-url=URL] [--source=SITE] [--codes=CODES]
-
-    Options:
-      -h --help     Show this screen.
-      -c --codes=CODES  ASX codes separated by comma. Mainly for debugging and testing purposes.
-      --share-back-days=DAYS  Days to look backward for shares [default: 0].
-      --sector-back-days=DAYS  Days to look backward for sectors [default: 1].
-      --business=TF  Only look at business days [default: True].
-      --share-url=URL  URL to find share file [default: ~/Dropbox/Project2M/ASXYearlyCompanyConsolidation/].
-      --sector-url=URL  URL to find sector file [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation/].
-      --source=SITE  Data source [default: yahoo].
-'''
 asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
 flag_col_name = 'is_last_11_day'
 csv_back_days = 10
@@ -42,7 +25,6 @@ def update_company_shares(
         start_date=None,
         end_date=None,
         source=None,
-        business=None,
         session=None,
         ):
     if codes is None:
@@ -64,10 +46,7 @@ def update_company_shares(
         # given back_days, assume end_date is today
         end_datetime = pd.datetime.now()
         # get the start date
-        if business:
-            start_datetime = end_datetime - back_days * asx_dayoffset
-        else:
-            start_datetime = end_datetime - back_days * DateOffset()
+        start_datetime = end_datetime - back_days * asx_dayoffset
     elif start_date and end_date:
         # not given back_days then need to know the start_date and end_date
         start_datetime= pd.to_datetime(start_date)
@@ -133,7 +112,6 @@ def update_sectors(
         start_date=None,
         end_date=None,
         source=None,
-        business=None,
         session=None,
         ):
     if codes is None:
@@ -148,10 +126,7 @@ def update_sectors(
         # given back_days, assume end_date is today
         end_datetime = pd.datetime.now()
         # get the start date
-        if business:
-            start_datetime = end_datetime - back_days * asx_dayoffset
-        else:
-            start_datetime = end_datetime - back_days * DateOffset()
+        start_datetime = end_datetime - back_days * asx_dayoffset
     elif start_date and end_date:
         # not given back_days then need to know the start_date and end_date
         start_datetime= pd.to_datetime(start_date)
@@ -204,119 +179,3 @@ def update_sectors(
             os.path.join(db_url, this_year) + 'sector_price.csv',
             index=False
         )
-
-
-if __name__ == '__main__':
-    arguments = docopt(cmd_doc)
-    expire_after = datetime.timedelta(hours=3)
-    session = requests_cache.CachedSession(
-        cache_name='cache',
-        backend='sqlite',
-        expire_after=expire_after
-    )
-    if arguments['share']:
-        if arguments['auto']:
-            if arguments['--business'] == 'True':
-                logging.info(
-                    'Auto bulk updating shares back ' +
-                    '{n} business day(s) from now.'.format(
-                        n=arguments['--share-back-days']
-                    )
-                )
-            else:
-                logging.info(
-                    'Auto bulk updating shares back ' +
-                    '{n} day(s) from now.'.format(
-                        n=arguments['--share-back-days']
-                    )
-                )
-            update_company_shares(
-                db_url=arguments['--share-url'],
-                codes=arguments['--codes'],
-                back_days=int(arguments['--share-back-days']),
-                source=arguments['--source'],
-                business=str2bool(arguments['--business']),
-                session=session
-            )
-        elif arguments['manual']:
-            if arguments['--business'] == 'True':
-                logging.info(
-                    'Manual bulk updating shares between' +
-                    ' {start} and {end} (business days only).'.format(
-                        start=arguments['<start>'],
-                        end=arguments['<end>']
-                    )
-                )
-            else:
-                logging.info(
-                    'Manual bulk updating shares between' +
-                    ' {start} and {end}.'.format(
-                        start=arguments['<start>'],
-                        end=arguments['<end>']
-                    )
-                )
-            update_company_shares(
-                db_url=arguments['--share-url'],
-                codes=arguments['--codes'],
-                start_date=arguments['<start>'],
-                end_date=arguments['<end>'],
-                source=arguments['--source'],
-                business=str2bool(arguments['--business']),
-                session=session
-            )
-        else:
-            raise SystemError('Wrong command combination.')
-    elif arguments['sector']:
-        if arguments['auto']:
-            if arguments['--business'] == 'True':
-                logging.info(
-                    'Auto bulk updating sectors back ' +
-                    '{n} business day(s) from now'.format(
-                        n=arguments['--sector-back-days']
-                    )
-                )
-            else:
-                logging.info(
-                    'Auto bulk updating sectors back ' +
-                    '{n} day(s) from now.'.format(
-                        n=arguments['--sector-back-days']
-                    )
-                )
-            update_sectors(
-                db_url=arguments['--sector-url'],
-                codes=arguments['--codes'],
-                back_days=int(arguments['--sector-back-days']),
-                source=arguments['--source'],
-                business=arguments['--business'],
-                session=session
-            )
-        elif arguments['manual']:
-            if arguments['--business'] == 'True':
-                logging.info(
-                    'Manual bulk updating sectors between' +
-                    ' {start} and {end} (business days only).'.format(
-                        start=arguments['<start>'],
-                        end=arguments['<end>']
-                    )
-                )
-            else:
-                logging.info(
-                    'Manual bulk updating sectors between' +
-                    ' {start} and {end}.'.format(
-                        start=arguments['<start>'],
-                        end=arguments['<end>']
-                    )
-                )
-            update_sectors(
-                db_url=arguments['--sector-url'],
-                codes=arguments['--codes'],
-                start_date=arguments['<start>'],
-                end_date=arguments['<end>'],
-                source=arguments['--source'],
-                business=arguments['--business'],
-                session=session
-            )
-        else:
-            raise SystemError('Wrong command combination.')
-    else:
-        raise SystemError('Share or sector?')
