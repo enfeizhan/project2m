@@ -154,5 +154,25 @@ class PreSentiment(Base, CSVLoadable):
     date = Column(Date, nullable=False)
 
 
+class SharePrice(Base, CSVLoadable):
+    __tablename__ = 'share_price'
+    pk = Column(Integer, nullable=False, primary_key=True)
+    asx_code = Column(String(255), nullable=False)
+    open_price = Column(Float, nullable=False)
+    high_price = Column(Float, nullable=False)
+    low_price = Column(Float, nullable=False)
+    close_price = Column(Float, nullable=False)
+    adj_close_price = Column(Float, nullable=False)
+    volume_price = Column(Float, nullable=False)
+    is_sector = Column(Boolean, nullable=False)
+    date = Column(Date, nullable=False)
+
+
 def create_all_tables():
     Base.metadata.create_all(engine)
+
+Index('idx_presentiment_asxcode', PreSentiment.asx_code)
+Index('idx_presentiment_date', PreSentiment.date)
+Index('idx_presentiment_source', PreSentiment.source)
+Index('idx_shareprice_asxcode', SharePrice.asx_code)
+Index('idx_shareprice_date', SharePrice.date)

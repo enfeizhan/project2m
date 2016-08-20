@@ -1,4 +1,5 @@
 from .models import PreSentiment
+from .models import SharePrice
 
 
 class DataSource:
@@ -42,6 +43,22 @@ class PreSentimentData(DataSource):
 
     def load_csv(self):
         PreSentiment.load_from_csv(
+            filename=self.filename,
+            parse_dates=True,
+            date_format='%Y-%m-%d',
+            clear_table_first=False,
+            overwrite_existing_records=False
+        )
+
+class SharePriceData(DataSource):
+    def load_dataframe(self):
+        SharePrice.load_from_dataframe(
+            dataframe=self.dataframe,
+            overwrite_existing_records=False
+        )
+
+    def load_csv(self):
+        SharePrice.load_from_csv(
             filename=self.filename,
             parse_dates=True,
             date_format='%Y-%m-%d',
