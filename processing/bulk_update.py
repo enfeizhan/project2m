@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 def update_company_shares(
-        db_url,
         codes=None,
         back_days=None,
         start_date=None,
@@ -76,7 +75,6 @@ def update_company_shares(
     
 
 def update_sectors(
-        db_url,
         codes=None,
         back_days=None,
         start_date=None,

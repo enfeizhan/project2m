@@ -1,22 +1,17 @@
 import os
 import datetime
 import requests_cache
-import pandas as pd
-import pandas_datareader.data as web
 import logging
-from pandas.tseries.offsets import CustomBusinessDay, DateOffset
-from utils import ASXTradingCalendar
-from utils import str2bool
 from docopt import docopt
 from processing.bulk_update import update_company_shares
 from processing.bulk_update import sectors
 from processing.pre_sentiment import run_pre_sentiment
 cmd_doc = '''
     Usage:
-      cli share auto [--share-back-days=DAYS] [--share-url=URL] [--source=SITE] [--codes=CODES]
-      cli share manual <start> <end> [--share-url=URL] [--source=SITE] [--codes=CODES]
-      cli sector auto [--sector-back-days=DAYS] [--sector-url=URL] [--source=SITE] [--codes=CODES]
-      cli sector manual <start> <end> [--sector-url=URL] [--source=SITE] [--codes=CODES]
+      cli share auto [--share-back-days=DAYS] [--source=SITE] [--codes=CODES]
+      cli share manual <start> <end> [--source=SITE] [--codes=CODES]
+      cli sector auto [--sector-back-days=DAYS] [--source=SITE] [--codes=CODES]
+      cli sector manual <start> <end> [--source=SITE] [--codes=CODES]
       cli pre-sentiment
 
     Options:
@@ -24,16 +19,11 @@ cmd_doc = '''
       -c --codes=CODES  ASX codes separated by comma. Mainly for debugging and testing purposes.
       --share-back-days=DAYS  Days to look backward for shares [default: 0].
       --sector-back-days=DAYS  Days to look backward for sectors [default: 1].
-      --share-url=URL  URL to find share file [default: ~/Dropbox/Project2M/ASXYearlyCompanyConsolidation/].
-      --sector-url=URL  URL to find sector file [default: ~/Dropbox/Project2M/ASXYearlySectorConsolidation/].
       --source=SITE  Data source [default: yahoo].
 '''
-asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
-flag_col_name = 'is_last_11_day'
-csv_back_days = 10
 
 logging.basicConfig(
-    filename='bulk_update.log',
+    filename='project2m.log',
     format='%(asctime)s %(levelname)s: %(message)s',
     level=logging.INFO
 )
@@ -58,7 +48,6 @@ if __name__ == '__main__':
                 )
             )
             update_company_shares(
-                db_url=arguments['--share-url'],
                 codes=arguments['--codes'],
                 back_days=int(arguments['--share-back-days']),
                 source=arguments['--source'],
@@ -73,7 +62,6 @@ if __name__ == '__main__':
                 )
             )
             update_company_shares(
-                db_url=arguments['--share-url'],
                 codes=arguments['--codes'],
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
@@ -91,7 +79,6 @@ if __name__ == '__main__':
                 )
             )
             update_sectors(
-                db_url=arguments['--sector-url'],
                 codes=arguments['--codes'],
                 back_days=int(arguments['--sector-back-days']),
                 source=arguments['--source'],
@@ -106,7 +93,6 @@ if __name__ == '__main__':
                 )
             )
             update_sectors(
-                db_url=arguments['--sector-url'],
                 codes=arguments['--codes'],
                 start_date=arguments['<start>'],
                 end_date=arguments['<end>'],
