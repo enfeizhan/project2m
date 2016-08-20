@@ -34,7 +34,7 @@ class DataSource:
         pass
 
 
-class PreSentimentData(DataSource):
+class PreSentimentLoad(DataSource):
     def load_dataframe(self):
         PreSentiment.load_from_dataframe(
             dataframe=self.dataframe,
@@ -50,7 +50,7 @@ class PreSentimentData(DataSource):
             overwrite_existing_records=False
         )
 
-class SharePriceData(DataSource):
+class SharePriceLoad(DataSource):
     def load_dataframe(self):
         SharePrice.load_from_dataframe(
             dataframe=self.dataframe,

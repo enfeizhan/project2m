@@ -163,7 +163,7 @@ class SharePrice(Base, CSVLoadable):
     low_price = Column(Float, nullable=False)
     close_price = Column(Float, nullable=False)
     adj_close_price = Column(Float, nullable=False)
-    volume_price = Column(Float, nullable=False)
+    volume = Column(Float, nullable=False)
     is_sector = Column(Boolean, nullable=False)
     date = Column(Date, nullable=False)
 

@@ -5,13 +5,20 @@ import pandas as pd
 import pandas_datareader.data as web
 import logging
 from pandas.tseries.offsets import CustomBusinessDay, DateOffset
-from utils import ASXTradingCalendar
-from utils import str2bool
 from docopt import docopt
+from .utils import ASXTradingCalendar
+from .utils import str2bool
+from .datasets import SharePriceLoad
 asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
-flag_col_name = 'is_last_11_day'
-csv_back_days = 10
-
+column_name_change ={'minor': 'asx_code',
+         'Date': 'date',
+         'Open': 'open_price',
+         'High': 'high_price',
+         'Low': 'low_price',
+         'Close': 'close_price',
+         'Volume': 'volume',
+         'Adj Close': 'adj_close_price',
+}
 logging.basicConfig(
     filename='bulk_update.log',
     format='%(asctime)s %(levelname)s: %(message)s',
@@ -64,45 +71,11 @@ def update_company_shares(
         session=session
     ).to_frame()
     res = res.reset_index()
-    # find the last day for the purpose of finding last 11 days
-    last_day = res.Date.max()
-    days_ago = last_day - csv_back_days * asx_dayoffset
-    # find this year to find the file
-    this_year = str(last_day.year)
-    res = res.rename(columns={'minor': 'code'})
+    res = res.rename(columns=column_name_change)
+    res = res.loc[:, 'is_sector'] = False
     logging.info('{n} shares updated.'.format(n=res.code.nunique()))
-    try:
-        # read this year's data
-        yearly_dat = pd.read_csv(
-            os.path.join(db_url, this_year) + 'price.csv'
-        )
-        # parsing the date
-        yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
-        # append data to the file of this year
-        # res in the first place so the duplicate from old dataset will
-        # be dropped
-        res = pd.concat([res, yearly_dat])
-        # drop duplicates sometimes
-        res = res.drop_duplicates(['Date', 'code'])
-        res = res.sort_values(['code', 'Date'])
-        res = res.set_index(['Date', 'code'])
-        # reset to all zeros
-        res.loc[:, flag_col_name] = 0
-        # set the last 11 days as one
-        res = res.sort_index(level=[0, 1])
-        res.loc[days_ago:last_day, flag_col_name] = 1
-        res = res.sort_index(level=[1, 0])
-        res.to_csv(
-            os.path.join(db_url, this_year) + 'price.csv'
-        )
-    except OSError:
-        # beginning of a year can't find the file
-        # reset to all one
-        res.loc[:, flag_col_name] = 1
-        res.to_csv(
-            os.path.join(db_url, this_year) + 'price.csv',
-            index=False
-        )
+    to_load = SharePriceLoad.process_dataframe(res)
+    to_load.load_dataframe()
     
 
 def update_sectors(
@@ -144,38 +117,8 @@ def update_sectors(
         session=session
     ).to_frame()
     res = res.reset_index()
-    # find the last day for the purpose of finding last 11 days
-    last_day = res.Date.max()
-    days_ago = last_day - csv_back_days * asx_dayoffset
-    # find this year to find the file
-    this_year = str(last_day.year)
-    res = res.rename(columns={'minor': 'code'})
+    res = res.rename(columns=column_name_change)
+    res = res.loc[:, 'is_sector'] = True
     logging.info('{n} sectors updated.'.format(n=res.code.nunique()))
-    try:
-        yearly_dat = pd.read_csv(
-            os.path.join(db_url, this_year) + 'sector_price.csv'
-        )
-        yearly_dat.loc[:, 'Date'] = pd.to_datetime(yearly_dat.Date.values)
-        # append data to the file of this year
-        res = pd.concat([res, yearly_dat])
-        # drop duplicates sometimes
-        res = res.drop_duplicates(['Date', 'code'])
-        res = res.sort_values(['code', 'Date'])
-        res = res.set_index(['Date', 'code'])
-        # reset to all zeros
-        res.loc[:, flag_col_name] = 0
-        # set the last 11 days as one
-        res = res.sort_index(level=[0, 1])
-        res.loc[days_ago:last_day, flag_col_name] = 1
-        res = res.sort_index(level=[1, 0])
-        res.to_csv(
-            os.path.join(db_url, this_year) + 'sector_price.csv'
-        )
-    except OSError:
-        # beginning of a year can't find the file
-        # reset to all one
-        res.loc[:, flag_col_name] = 1
-        res.to_csv(
-            os.path.join(db_url, this_year) + 'sector_price.csv',
-            index=False
-        )
+    to_load = SharePriceLoad.process_dataframe(res)
+    to_load.load_dataframe()
