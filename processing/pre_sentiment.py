@@ -5,12 +5,12 @@ import numpy as np
 import re
 import logging
 from docopt import docopt
+from .datasets import PreSentimentLoad
 logging.basicConfig(
     filename='pre_sentiment.log',
     format='%(asctime)s %(levelname)s: %(message)s',
     level=logging.INFO
 )
-db_url = os.path.expanduser('~/Dropbox/Project2M/Sentiment')
 today = pd.datetime.today()
 year = today.year
 month = today.month
@@ -24,7 +24,7 @@ def save_counts(code_list, source, date):
     code_counts = code_counts.reset_index()
     code_counts.loc[:, 'source'] = source
     code_counts.loc[:, 'date'] = date
-    code_counts.columns = ['asx code', 'counts', 'source', 'date']
+    code_counts.columns = ['asx_code', 'counts', 'source', 'date']
     return code_counts
 
 
@@ -83,7 +83,10 @@ def scrape_motley_fool():
         today,
     )
     driver.quit()
-    return code_counts, index_counts
+    code_load = PreSentimentLoad.process_dataframe(code_counts)
+    index_load = PreSentimentLoad.process_dataframe(index_counts)
+    code_load.load_dataframe()
+    index_load.load_dataframe()
 
 
 def scrape_hotcopper_forum():
@@ -98,16 +101,11 @@ def scrape_hotcopper_forum():
     code_list = most_dis[0::3]
     count_list = most_dis[2::3]
     res_df = pd.DataFrame(
-        {'asx code': code_list,
+        {'asx_code': code_list,
          'counts': count_list}
     )
     res_df.loc[:, 'source'] = 'Hotcopper Forum'
     res_df.loc[:, 'date'] = today
-    res_df.to_csv('counts.csv', index=False)
     driver.quit()
-    return res_df
-
-
-def run_pre_sentiment():
-    scrape_motley_fool()
-    scrape_hotcopper_forum()
+    load_res = PreSentimentLoad.process_dataframe(res_df)
+    load_res.load_dataframe()
