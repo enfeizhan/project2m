@@ -72,21 +72,23 @@ def scrape_motley_fool():
         art_text = driver.find_element_by_id('full_content').text
         code_list += list(set(re.findall(asx_pattern, art_text)))
         index_list += list(set(re.findall(index_pattern, art_text)))
-    code_counts = save_counts(
-        code_list,
-        'Motley Fool',
-        today,
-    )
-    index_counts = save_counts(
-        index_list,
-        'Motley Fool',
-        today,
-    )
+    if len(code_counts) > 0:
+        code_counts = save_counts(
+            code_list,
+            'Motley Fool',
+            today,
+        )
+        code_load = PreSentimentLoad.process_dataframe(code_counts)
+        code_load.load_dataframe()
+    if len(index_counts) > 0:
+        index_counts = save_counts(
+            index_list,
+            'Motley Fool',
+            today,
+        )
+        index_load = PreSentimentLoad.process_dataframe(index_counts)
+        index_load.load_dataframe()
     driver.quit()
-    code_load = PreSentimentLoad.process_dataframe(code_counts)
-    index_load = PreSentimentLoad.process_dataframe(index_counts)
-    code_load.load_dataframe()
-    index_load.load_dataframe()
 
 
 def scrape_hotcopper_forum():
