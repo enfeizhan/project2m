@@ -37,6 +37,8 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
     level=logging.INFO
 )
+logger = logging.getLogger('')
+
 
 
 if __name__ == '__main__':
@@ -49,7 +51,7 @@ if __name__ == '__main__':
     )
     if arguments['share']:
         if arguments['auto']:
-            logging.info(
+            logger.info(
                 'Auto bulk updating shares back ' +
                 '{n} business day(s) from now.'.format(
                     n=arguments['--share-back-days']
@@ -63,7 +65,7 @@ if __name__ == '__main__':
                 session=session
             )
         elif arguments['manual']:
-            logging.info(
+            logger.info(
                 'Manual bulk updating shares between' +
                 ' {start} and {end} (business days only).'.format(
                     start=arguments['<start>'],
@@ -82,7 +84,7 @@ if __name__ == '__main__':
             raise SystemError('Wrong command combination.')
     elif arguments['sector']:
         if arguments['auto']:
-            logging.info(
+            logger.info(
                 'Auto bulk updating sectors back ' +
                 '{n} business day(s) from now'.format(
                     n=arguments['--sector-back-days']
@@ -96,7 +98,7 @@ if __name__ == '__main__':
                 session=session
             )
         elif arguments['manual']:
-            logging.info(
+            logger.info(
                 'Manual bulk updating sectors between' +
                 ' {start} and {end} (business days only).'.format(
                     start=arguments['<start>'],

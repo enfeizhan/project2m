@@ -19,11 +19,8 @@ column_name_change ={'minor': 'asx_code',
          'Volume': 'volume',
          'Adj Close': 'adj_close_price',
 }
-logging.basicConfig(
-    filename='bulk_update.log',
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.INFO
-)
+logger = logging.getLogger(__name__)
+
 
 def update_company_shares(
         db_url,
@@ -48,7 +45,7 @@ def update_company_shares(
     else:
         # when given codes, just split them to get a list
         codes_list = codes.split(',')
-    logging.info('There are {n} shares to update.'.format(n=len(codes_list)))
+    logger.info('There are {n} shares to update.'.format(n=len(codes_list)))
     if back_days is not None:
         # given back_days, assume end_date is today
         end_datetime = pd.datetime.now()
@@ -73,7 +70,7 @@ def update_company_shares(
     res = res.reset_index()
     res = res.rename(columns=column_name_change)
     res = res.loc[:, 'is_sector'] = False
-    logging.info('{n} shares updated.'.format(n=res.code.nunique()))
+    logger.info('{n} shares updated.'.format(n=res.code.nunique()))
     to_load = SharePriceLoad.process_dataframe(res)
     to_load.load_dataframe()
     
@@ -93,7 +90,7 @@ def update_sectors(
     else:
         # when given codes, just split them to get a list
         codes_list = codes.split(',')
-    logging.info('There are {n} sectors to update.'.format(n=len(codes_list)))
+    logger.info('There are {n} sectors to update.'.format(n=len(codes_list)))
 
     if back_days is not None:
         # given back_days, assume end_date is today
@@ -119,6 +116,6 @@ def update_sectors(
     res = res.reset_index()
     res = res.rename(columns=column_name_change)
     res = res.loc[:, 'is_sector'] = True
-    logging.info('{n} sectors updated.'.format(n=res.code.nunique()))
+    logger.info('{n} sectors updated.'.format(n=res.code.nunique()))
     to_load = SharePriceLoad.process_dataframe(res)
     to_load.load_dataframe()
