@@ -35,33 +35,35 @@ class DataSource:
 
 
 class PreSentimentLoad(DataSource):
-    def load_dataframe(self):
+    def load_dataframe(self, overwrite_existing_records=False):
         PreSentiment.load_from_dataframe(
             dataframe=self.dataframe,
-            overwrite_existing_records=False
+            overwrite_existing_records=overwrite_existing_records
         )
 
-    def load_csv(self):
+    def load_csv(self, clear_table_first=False,
+                 overwrite_existing_records=False):
         PreSentiment.load_from_csv(
             filename=self.filename,
             parse_dates=True,
             date_format='%Y-%m-%d',
-            clear_table_first=False,
-            overwrite_existing_records=False
+            clear_table_first=clear_table_first,
+            overwrite_existing_records=overwrite_existing_records
         )
 
 class SharePriceLoad(DataSource):
-    def load_dataframe(self):
+    def load_dataframe(self, overwrite_existing_records=False):
         SharePrice.load_from_dataframe(
             dataframe=self.dataframe,
-            overwrite_existing_records=False
+            overwrite_existing_records=overwrite_existing_records
         )
 
-    def load_csv(self):
+    def load_csv(self, clear_table_first=False,
+                 overwrite_existing_records=False):
         SharePrice.load_from_csv(
             filename=self.filename,
             parse_dates=True,
             date_format='%Y-%m-%d',
-            clear_table_first=False,
-            overwrite_existing_records=False
+            clear_table_first=clear_table_first,
+            overwrite_existing_records=overwrite_existing_records
         )

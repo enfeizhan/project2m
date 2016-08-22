@@ -72,7 +72,7 @@ def update_company_shares(
     res.loc[:, 'create_date'] = pd.datetime.today()
     logger.info('{n} shares updated.'.format(n=res.asx_code.nunique()))
     to_load = SharePriceLoad.process_dataframe(res)
-    to_load.load_dataframe()
+    to_load.load_dataframe(overwrite_existing_records=True)
     
 
 def update_sectors(
@@ -118,4 +118,4 @@ def update_sectors(
     res.loc[:, 'create_date'] = pd.datetime.today()
     logger.info('{n} sectors updated.'.format(n=res.asx_code.nunique()))
     to_load = SharePriceLoad.process_dataframe(res)
-    to_load.load_dataframe()
+    to_load.load_dataframe(overwrite_existing_records=True)
