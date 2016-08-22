@@ -4,7 +4,7 @@ import requests_cache
 import logging
 from docopt import docopt
 from processing.bulk_update import update_company_shares
-from processing.bulk_update import sectors
+from processing.bulk_update import update_sectors
 from processing.pre_sentiment import run_pre_sentiment
 cmd_doc = '''
     Usage:

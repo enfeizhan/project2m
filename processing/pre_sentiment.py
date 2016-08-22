@@ -111,3 +111,8 @@ def scrape_hotcopper_forum():
     driver.quit()
     load_res = PreSentimentLoad.process_dataframe(res_df)
     load_res.load_dataframe()
+
+
+def run_pre_sentiment():
+    scrape_hotcopper_forum()
+    scrape_motley_fool()

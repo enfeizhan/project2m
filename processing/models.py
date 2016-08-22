@@ -147,17 +147,15 @@ class CSVLoadable(DataframeLoadable):
 
 class PreSentiment(Base, CSVLoadable):
     __tablename__ = 'pre_sentiment'
-    pk = Column(Integer, nullable=False, primary_key=True)
-    asx_code = Column(String(255), nullable=False)
+    asx_code = Column(String(255), primary_key=True, nullable=False)
     counts = Column(Integer, nullable=False)
-    source = Column(String(255), nullable=False)
-    date = Column(Date, nullable=False)
+    source = Column(String(255), primary_key=True, nullable=False)
+    date = Column(Date, primary_key=True, nullable=False)
 
 
 class SharePrice(Base, CSVLoadable):
     __tablename__ = 'share_price'
-    pk = Column(Integer, nullable=False, primary_key=True)
-    asx_code = Column(String(255), nullable=False)
+    asx_code = Column(String(255), primary_key=True, nullable=False)
     open_price = Column(Float, nullable=False)
     high_price = Column(Float, nullable=False)
     low_price = Column(Float, nullable=False)
@@ -165,7 +163,8 @@ class SharePrice(Base, CSVLoadable):
     adj_close_price = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
     is_sector = Column(Boolean, nullable=False)
-    date = Column(Date, nullable=False)
+    date = Column(Date, primary_key=True, nullable=False)
+    create_date = Column(Date, nullable=False)
 
 
 def create_all_tables():
