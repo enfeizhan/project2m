@@ -2,26 +2,30 @@ import os
 import datetime
 import requests_cache
 import logging
+import pandas as pd
 from docopt import docopt
-from processing.bulk_update import update_company_shares
-from processing.bulk_update import update_sectors
+from pandas.tseries.offsets import CustomBusinessDay
+from processing.bulk_update import update_market
 from processing.pre_sentiment import run_pre_sentiment
+from processing.utils import today
+from processing.utils import ASXTradingCalendar
+asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
+last_business_day = today - asx_dayoffset
 cmd_doc = '''
     Usage:
-      cli share auto [--share-back-days=DAYS] [--source=SITE] [--codes=CODES]
+      cli share auto [--source=SITE] [--codes=CODES]
       cli share manual <start> <end> [--source=SITE] [--codes=CODES]
-      cli sector auto [--sector-back-days=DAYS] [--source=SITE] [--codes=CODES]
+      cli share startover [--source=SITE] [--codes=CODES]
+      cli sector auto [--source=SITE] [--codes=CODES]
       cli sector manual <start> <end> [--source=SITE] [--codes=CODES]
+      cli sector startover [--source=SITE] [--codes=CODES]
       cli pre-sentiment
 
     Options:
       -h --help     Show this screen.
       -c --codes=CODES  ASX codes separated by comma. Mainly for debugging and testing purposes.
-      --share-back-days=DAYS  Days to look backward for shares [default: 0].
-      --sector-back-days=DAYS  Days to look backward for sectors [default: 1].
       --source=SITE  Data source [default: yahoo].
 '''
-
 logging.basicConfig(
     filename='project2m.log',
     format='%(asctime)s %(levelname)s: %(message)s',
@@ -29,6 +33,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger('')
 
+
+class CommandCombinationError(Exception):
+    pass
 
 
 if __name__ == '__main__':
@@ -41,17 +48,14 @@ if __name__ == '__main__':
     )
     if arguments['share']:
         if arguments['auto']:
-            logger.info(
-                'Auto bulk updating shares back ' +
-                '{n} business day(s) from now.'.format(
-                    n=arguments['--share-back-days']
-                )
-            )
-            update_company_shares(
+            logger.info('Auto bulk updating today\'s shares price.')
+            update_market(
                 codes=arguments['--codes'],
-                back_days=int(arguments['--share-back-days']),
+                start_date=today,
+                end_date=today,
                 source=arguments['--source'],
-                session=session
+                price_type='share',
+                session=session,
             )
         elif arguments['manual']:
             logger.info(
@@ -61,28 +65,38 @@ if __name__ == '__main__':
                     end=arguments['<end>']
                 )
             )
-            update_company_shares(
+            update_market(
                 codes=arguments['--codes'],
-                start_date=arguments['<start>'],
-                end_date=arguments['<end>'],
+                start_date=pd.to_datetime(arguments['<start>']),
+                end_date=pd.to_datetime(arguments['<end>']),
                 source=arguments['--source'],
-                session=session
+                price_type='share',
+                session=session,
+                overwrite_existing_records=True
+            )
+        elif arguments['startover']:
+            logger.info('Share prices start over.')
+            update_market(
+                codes=arguments['--codes'],
+                start_date=pd.to_datetime('19900101'),
+                end_date=today,
+                source=arguments['--source'],
+                price_type='share',
+                session=session,
+                clear_table_first=True
             )
         else:
-            raise SystemError('Wrong command combination.')
+            raise CommandCombinationError
     elif arguments['sector']:
         if arguments['auto']:
-            logger.info(
-                'Auto bulk updating sectors back ' +
-                '{n} business day(s) from now'.format(
-                    n=arguments['--sector-back-days']
-                )
-            )
-            update_sectors(
+            logger.info('Auto bulk updating last business day sectors price.')
+            update_market(
                 codes=arguments['--codes'],
-                back_days=int(arguments['--sector-back-days']),
+                start_date=last_business_day,
+                end_date=today,
                 source=arguments['--source'],
-                session=session
+                price_type='sector',
+                session=session,
             )
         elif arguments['manual']:
             logger.info(
@@ -92,14 +106,27 @@ if __name__ == '__main__':
                     end=arguments['<end>']
                 )
             )
-            update_sectors(
+            update_market(
                 codes=arguments['--codes'],
-                start_date=arguments['<start>'],
-                end_date=arguments['<end>'],
+                start_date=pd.to_datetime(arguments['<start>']),
+                end_date=pd.to_datetime(arguments['<end>']),
                 source=arguments['--source'],
-                session=session
+                price_type='sector',
+                session=session,
+                overwrite_existing_records=True
+            )
+        elif arguments['startover']:
+            logger.info('Sector prices start over.')
+            update_market(
+                codes=arguments['--codes'],
+                start_date=pd.to_datetime('19900101'),
+                end_date=today,
+                source=arguments['--source'],
+                price_type='sector',
+                session=session,
+                clear_table_first=True
             )
         else:
-            raise SystemError('Wrong command combination.')
+            raise CommandCombinationError
     elif arguments['pre-sentiment']:
         run_pre_sentiment()

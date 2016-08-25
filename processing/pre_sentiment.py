@@ -6,11 +6,7 @@ import re
 import logging
 from docopt import docopt
 from .datasets import PreSentimentLoad
-logging.basicConfig(
-    filename='pre_sentiment.log',
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.INFO
-)
+logger = logging.getLogger(__name__)
 today = pd.datetime.today()
 year = today.year
 month = today.month
@@ -18,13 +14,16 @@ day = today.day
 today = '{:4d}-{:02d}-{:02d}'.format(year, month, day)
 
 
-def save_counts(code_list, source, date):
+def save_counts(code_list, source, date, country):
     code_series = pd.Series(code_list)
     code_counts = code_series.value_counts()
     code_counts = code_counts.reset_index()
     code_counts.loc[:, 'source'] = source
     code_counts.loc[:, 'date'] = date
-    code_counts.columns = ['asx_code', 'counts', 'source', 'date']
+    code_counts.loc[:, 'country'] = country
+    code_counts.columns = ['code', 'counts', 'source', 'date', 'country']
+    if country == 'Australia':
+        code_counts.loc[:, 'code'] = code_counts.loc[:, 'code'] + '.AX'
     return code_counts
 
 
@@ -72,19 +71,21 @@ def scrape_motley_fool():
         art_text = driver.find_element_by_id('full_content').text
         code_list += list(set(re.findall(asx_pattern, art_text)))
         index_list += list(set(re.findall(index_pattern, art_text)))
-    if len(code_counts) > 0:
+    if len(code_list) > 0:
         code_counts = save_counts(
             code_list,
             'Motley Fool',
             today,
+            'Australia'
         )
         code_load = PreSentimentLoad.process_dataframe(code_counts)
         code_load.load_dataframe()
-    if len(index_counts) > 0:
+    if len(index_list) > 0:
         index_counts = save_counts(
             index_list,
             'Motley Fool',
             today,
+            'Australia'
         )
         index_load = PreSentimentLoad.process_dataframe(index_counts)
         index_load.load_dataframe()
@@ -103,11 +104,13 @@ def scrape_hotcopper_forum():
     code_list = most_dis[0::3]
     count_list = most_dis[2::3]
     res_df = pd.DataFrame(
-        {'asx_code': code_list,
+        {'code': code_list,
          'counts': count_list}
     )
     res_df.loc[:, 'source'] = 'Hotcopper Forum'
     res_df.loc[:, 'date'] = today
+    res_df.loc[:, 'country'] = 'Australia'
+    res_df.loc[:, 'code'] = res_df.loc[:, 'code'] + '.AX'
     driver.quit()
     load_res = PreSentimentLoad.process_dataframe(res_df)
     load_res.load_dataframe()

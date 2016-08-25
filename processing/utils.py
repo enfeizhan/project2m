@@ -1,4 +1,5 @@
 from datetime import timedelta
+from datetime import datetime
 from pandas.tseries.holiday import AbstractHolidayCalendar
 from pandas.tseries.holiday import Holiday
 from pandas.tseries.holiday import next_monday
@@ -33,3 +34,6 @@ class ASXTradingCalendar(AbstractHolidayCalendar):
 
 def str2bool(string):
     return string == 'True'
+
+today = datetime.now()
+today_str = today.strftime('%Y%m%d')

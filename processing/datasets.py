@@ -1,5 +1,5 @@
 from .models import PreSentiment
-from .models import SharePrice
+from .models import YahooSharePrice
 
 
 class DataSource:
@@ -35,35 +35,41 @@ class DataSource:
 
 
 class PreSentimentLoad(DataSource):
-    def load_dataframe(self, overwrite_existing_records=False):
+    def load_dataframe(self, overwrite_existing_records=False,
+                       clear_table_first=False):
         PreSentiment.load_from_dataframe(
             dataframe=self.dataframe,
-            overwrite_existing_records=overwrite_existing_records
+            overwrite_existing_records=overwrite_existing_records,
+            clear_table_first=clear_table_first
         )
 
-    def load_csv(self, clear_table_first=False,
-                 overwrite_existing_records=False):
+    def load_csv(self, overwrite_existing_records=False,
+                 clear_table_first=False, parse_dates=True,
+                 date_format='%Y-%m-%d'):
         PreSentiment.load_from_csv(
             filename=self.filename,
-            parse_dates=True,
-            date_format='%Y-%m-%d',
+            parse_dates=parse_dates,
+            date_format=date_format,
             clear_table_first=clear_table_first,
             overwrite_existing_records=overwrite_existing_records
         )
 
-class SharePriceLoad(DataSource):
-    def load_dataframe(self, overwrite_existing_records=False):
-        SharePrice.load_from_dataframe(
+class YahooSharePriceLoad(DataSource):
+    def load_dataframe(self, overwrite_existing_records=False,
+                       clear_table_first=False):
+        YahooSharePrice.load_from_dataframe(
             dataframe=self.dataframe,
-            overwrite_existing_records=overwrite_existing_records
+            overwrite_existing_records=overwrite_existing_records,
+            clear_table_first=clear_table_first
         )
 
-    def load_csv(self, clear_table_first=False,
-                 overwrite_existing_records=False):
-        SharePrice.load_from_csv(
+    def load_csv(self, overwrite_existing_records=False,
+                 clear_table_first=False, parse_dates=True,
+                 date_format='%Y-%m-%d'):
+        YahooSharePrice.load_from_csv(
             filename=self.filename,
-            parse_dates=True,
-            date_format='%Y-%m-%d',
+            parse_dates=parse_dates,
+            date_format=date_format,
             clear_table_first=clear_table_first,
             overwrite_existing_records=overwrite_existing_records
         )

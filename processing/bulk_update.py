@@ -1,121 +1,148 @@
-import os
-import datetime
-import requests_cache
 import pandas as pd
 import pandas_datareader.data as web
 import logging
-from pandas.tseries.offsets import CustomBusinessDay, DateOffset
-from docopt import docopt
-from .utils import ASXTradingCalendar
-from .utils import str2bool
-from .datasets import SharePriceLoad
-asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
-column_name_change ={'minor': 'asx_code',
-         'Date': 'date',
-         'Open': 'open_price',
-         'High': 'high_price',
-         'Low': 'low_price',
-         'Close': 'close_price',
-         'Volume': 'volume',
-         'Adj Close': 'adj_close_price',
+yahoo_price_name_change ={
+    'minor': 'code',
+    'Date': 'date',
+    'Open': 'open_price',
+    'High': 'high_price',
+    'Low': 'low_price',
+    'Close': 'close_price',
+    'Volume': 'volume',
+    'Adj Close': 'adj_close_price',
 }
 logger = logging.getLogger(__name__)
+asx_company_list_url = (
+    'http://www.asx.com.au/asx/research/ASXListedCompanies.csv'
+)
 
 
-def update_company_shares(
-        codes=None,
-        back_days=None,
-        start_date=None,
-        end_date=None,
-        source=None,
-        session=None,
-        ):
-    if codes is None:
-        # read the full company list from asx home page
-        # if not found, asx has changed the url
-        try:
-            asx = pd.read_csv(
-                'http://www.asx.com.au/asx/research/ASXListedCompanies.csv',
-                skiprows=1
-            )
-            codes_list = (asx.loc[:, 'ASX code'] + '.AX').tolist()
-        except:
-            raise SystemError('Share list not found on ASX!')
-    else:
-        # when given codes, just split them to get a list
-        codes_list = codes.split(',')
-    logger.info('There are {n} shares to update.'.format(n=len(codes_list)))
-    if back_days is not None:
-        # given back_days, assume end_date is today
-        end_datetime = pd.datetime.now()
-        # get the start date
-        start_datetime = end_datetime - back_days * asx_dayoffset
-    elif start_date and end_date:
-        # not given back_days then need to know the start_date and end_date
-        start_datetime= pd.to_datetime(start_date)
-        end_datetime = pd.to_datetime(end_date)
-    else:
-        raise SystemError(
-            'Needs days backwards or start date and end date'
+class IncompleteDateRangeError(Exception):
+    pass
+
+
+class InternetError(Exception):
+    pass
+
+
+def download_asx_company_list():
+    # read the full company list from asx home page
+    # if not found, asx has changed the url
+    try:
+        asx = pd.read_csv(
+            asx_company_list_url,
+            skiprows=1
         )
-    # get data through pandas
-    res = web.DataReader(
-        codes_list,
-        source,
-        start_datetime,
-        end_datetime,
-        session=session
-    ).to_frame()
-    res = res.reset_index()
-    res = res.rename(columns=column_name_change)
-    res.loc[:, 'is_sector'] = False
-    res.loc[:, 'create_date'] = pd.datetime.today()
-    logger.info('{n} shares updated.'.format(n=res.asx_code.nunique()))
-    to_load = SharePriceLoad.process_dataframe(res)
-    to_load.load_dataframe(overwrite_existing_records=True)
+        return (asx.loc[:, 'ASX code'] + '.AX').tolist()
+    except:
+        raise InternetError('Share list not found on ASX!')
+
+
+class Load(object):
+    def __init__(
+            self,
+            codes,
+            source,
+            start_date,
+            end_date,
+            price_type,
+            session,
+            is_sector,
+            load_channel,
+            column_name_change,
+            overwrite_existing_records,
+            clear_table_first
+        ):
+        self.codes = codes
+        self.source = source
+        self.start_date = start_date
+        self.end_date = end_date
+        self.price_type = price_type
+        self.session = session
+        self.is_sector = is_sector
+        self.load_channel = load_channel
+        self.column_name_change = column_name_change
+        self.overwrite_existing_records = overwrite_existing_records
+        self.clear_table_first = clear_table_first
+
+    def download_data(self):
+        if not (self.start_date and self.end_date):
+            raise IncompleteDateRangeError('Incomplete time range!')
+        # get data through pandas
+        self.res = web.DataReader(
+            self.codes,
+            self.source,
+            self.start_date,
+            self.end_date,
+            session=self.session
+        ).to_frame()
+        self.res = self.res.reset_index()
+
+    def _change_column_name(self):
+        if self.column_name_change:
+            self.res = self.res.rename(columns=self.column_name_change)
+
+    def load_to_db(self):
+        self._change_column_name()
+        if self.is_sector is not None:
+            self.res.loc[:, 'is_sector'] = self.is_sector 
+        self.res.loc[:, 'create_date'] = pd.datetime.today()
+        logger.info(
+            '{n} {price_type}s updated.'.format(
+                n=self.res.code.nunique(),
+                price_type=self.price_type,
+            )
+        )
+        to_load = self.load_channel.process_dataframe(self.res)
+        to_load.load_dataframe(
+            overwrite_existing_records=self.overwrite_existing_records,
+            clear_table_first=self.clear_table_first
+        )
     
 
-def update_sectors(
+def update_market(
         codes=None,
-        back_days=None,
         start_date=None,
         end_date=None,
         source=None,
+        price_type=None,
         session=None,
-        ):
-    if codes is None:
-        asx = pd.read_excel('sector_codes.xlsx')
-        codes_list = asx.sector_code.tolist()
-    else:
-        # when given codes, just split them to get a list
-        codes_list = codes.split(',')
-    logger.info('There are {n} sectors to update.'.format(n=len(codes_list)))
-
-    if back_days is not None:
-        # given back_days, assume end_date is today
-        end_datetime = pd.datetime.now()
-        # get the start date
-        start_datetime = end_datetime - back_days * asx_dayoffset
-    elif start_date and end_date:
-        # not given back_days then need to know the start_date and end_date
-        start_datetime= pd.to_datetime(start_date)
-        end_datetime = pd.to_datetime(end_date)
-    else:
-        raise SystemError(
-            'Needs days backwards or start date and end date'
-        )
-    # get data through pandas
-    res = web.DataReader(
-        codes_list,
-        source,
-        start_datetime,
-        end_datetime,
-        session=session
-    ).to_frame()
-    res = res.reset_index()
-    res = res.rename(columns=column_name_change)
-    res.loc[:, 'is_sector'] = True
-    res.loc[:, 'create_date'] = pd.datetime.today()
-    logger.info('{n} sectors updated.'.format(n=res.asx_code.nunique()))
-    to_load = SharePriceLoad.process_dataframe(res)
-    to_load.load_dataframe(overwrite_existing_records=True)
+        overwrite_existing_records=False,
+        clear_table_first=False
+    ):
+    if source == 'yahoo' and price_type == 'share':
+        from .datasets import YahooSharePriceLoad as load_channel
+        is_sector = False 
+        column_name_change = yahoo_price_name_change
+        if codes is None:
+            codes = download_asx_company_list()
+        else:
+            # when given codes, just split them to get a list
+            codes = codes.split(',')
+        logger.info('There are {n} shares to update.'.format(n=len(codes)))
+    elif source == 'yahoo' and price_type == 'sector':
+        from .datasets import YahooSharePriceLoad as load_channel
+        is_sector = True
+        column_name_change = yahoo_price_name_change
+        if codes is None:
+            asx = pd.read_excel('sector_codes.xlsx')
+            codes = asx.sector_code.tolist()
+        else:
+            # when given codes, just split them to get a list
+            codes = codes.split(',')
+        logger.info('There are {n} sectors to update.'.format(n=len(codes)))
+    load = Load(
+        codes=codes,
+        source=source,
+        start_date=start_date,
+        end_date=end_date,
+        price_type=price_type,
+        is_sector=is_sector,
+        load_channel=load_channel,
+        column_name_change=column_name_change,
+        session=session,
+        overwrite_existing_records=overwrite_existing_records,
+        clear_table_first=clear_table_first
+    )
+    load.download_data()
+    load.load_to_db()

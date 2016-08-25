@@ -13,6 +13,7 @@ from sqlalchemy import Float
 from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 from .app import engine
@@ -64,11 +65,14 @@ class DataframeLoadable:
     def delete_conflicting_records(cls, dataframe):
         from .app import Session
         session = Session()
-        primary_key = inspect(cls).primary_key[0].name
-        primary_keys = dataframe[primary_key].values.tolist()
-        filter_query = getattr(cls, primary_key).in_(primary_keys)
-        query = session.query(cls).filter(filter_query)
-        query.delete(synchronize_session=False)
+        primary_keys = list(map(lambda x: x.name, inspect(cls).primary_key))
+        for ind, row in dataframe.iterrows():
+            filter_query = (
+                getattr(cls, primary_key) == row.loc[primary_key]
+                for primary_key in primary_keys
+            )
+            query = session.query(cls).filter(and_(filter_query))
+            query.delete(synchronize_session=False)
         session.commit()
 
 
@@ -147,15 +151,16 @@ class CSVLoadable(DataframeLoadable):
 
 class PreSentiment(Base, CSVLoadable):
     __tablename__ = 'pre_sentiment'
-    asx_code = Column(String(255), primary_key=True, nullable=False)
+    code = Column(String(255), primary_key=True, nullable=False)
     counts = Column(Integer, nullable=False)
     source = Column(String(255), primary_key=True, nullable=False)
+    country = Column(String(50), nullable=False)
     date = Column(Date, primary_key=True, nullable=False)
 
 
-class SharePrice(Base, CSVLoadable):
-    __tablename__ = 'share_price'
-    asx_code = Column(String(255), primary_key=True, nullable=False)
+class YahooSharePrice(Base, CSVLoadable):
+    __tablename__ = 'yahoo_share_price'
+    code = Column(String(255), primary_key=True, nullable=False)
     open_price = Column(Float, nullable=False)
     high_price = Column(Float, nullable=False)
     low_price = Column(Float, nullable=False)
@@ -170,8 +175,8 @@ class SharePrice(Base, CSVLoadable):
 def create_all_tables():
     Base.metadata.create_all(engine)
 
-Index('idx_presentiment_asxcode', PreSentiment.asx_code)
+Index('idx_presentiment_code', PreSentiment.code)
 Index('idx_presentiment_date', PreSentiment.date)
 Index('idx_presentiment_source', PreSentiment.source)
-Index('idx_shareprice_asxcode', SharePrice.asx_code)
-Index('idx_shareprice_date', SharePrice.date)
+Index('idx_yahooshareprice_code', YahooSharePrice.code)
+Index('idx_yahooshareprice_date', YahooSharePrice.date)
