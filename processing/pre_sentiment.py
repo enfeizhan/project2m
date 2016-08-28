@@ -5,22 +5,22 @@ import numpy as np
 import re
 import logging
 from docopt import docopt
-from .datasets import PreSentimentLoad
+from .load_channels import LoadChannel
+from .postgresql_models import PreSentiment
+from .utils import country_codes
+from .utils import pre_sentiment_source_codes as source_codes
+from .utils import today
+from .utils import today_str
 logger = logging.getLogger(__name__)
-today = pd.datetime.today()
-year = today.year
-month = today.month
-day = today.day
-today = '{:4d}-{:02d}-{:02d}'.format(year, month, day)
 
 
 def save_counts(code_list, source, date, country):
     code_series = pd.Series(code_list)
     code_counts = code_series.value_counts()
     code_counts = code_counts.reset_index()
-    code_counts.loc[:, 'source'] = source
+    code_counts.loc[:, 'source'] = source_codes[source]
     code_counts.loc[:, 'date'] = date
-    code_counts.loc[:, 'country'] = country
+    code_counts.loc[:, 'country'] = country_codes[country]
     code_counts.columns = ['code', 'counts', 'source', 'date', 'country']
     if country == 'Australia':
         code_counts.loc[:, 'code'] = code_counts.loc[:, 'code'] + '.AX'
@@ -51,7 +51,7 @@ def scrape_motley_fool():
              for date in auth_date_list]
         )
         # check if article is from today
-        is_today= date_list == today
+        is_today= date_list == today_str
         article_list = article_list[is_today]
         # get today's articles link
         link_href_list += [
@@ -78,7 +78,8 @@ def scrape_motley_fool():
             today,
             'Australia'
         )
-        code_load = PreSentimentLoad.process_dataframe(code_counts)
+        code_load = LoadChannel(PreSentiment)
+        code_load.dataframe = code_counts
         code_load.load_dataframe()
     if len(index_list) > 0:
         index_counts = save_counts(
@@ -87,7 +88,8 @@ def scrape_motley_fool():
             today,
             'Australia'
         )
-        index_load = PreSentimentLoad.process_dataframe(index_counts)
+        index_load = LoadChannel(PreSentiment)
+        index_load.dataframe = index_counts
         index_load.load_dataframe()
     driver.quit()
 
@@ -107,12 +109,13 @@ def scrape_hotcopper_forum():
         {'code': code_list,
          'counts': count_list}
     )
-    res_df.loc[:, 'source'] = 'Hotcopper Forum'
+    res_df.loc[:, 'source'] = source_codes['Hotcopper Forum']
     res_df.loc[:, 'date'] = today
-    res_df.loc[:, 'country'] = 'Australia'
+    res_df.loc[:, 'country'] = country_codes['Australia']
     res_df.loc[:, 'code'] = res_df.loc[:, 'code'] + '.AX'
     driver.quit()
-    load_res = PreSentimentLoad.process_dataframe(res_df)
+    load_res = LoadChannel(PreSentiment)
+    load_res.dataframe = res_df
     load_res.load_dataframe()
 
 

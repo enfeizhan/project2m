@@ -1,6 +1,11 @@
 import pandas as pd
 import pandas_datareader.data as web
 import logging
+from .load_channels import LoadChannel
+from .postgresql_models import SharePrice
+from .utils import country_codes
+from .utils import price_type_codes
+from .utils import price_source_codes as source_codes
 yahoo_price_name_change ={
     'minor': 'code',
     'Date': 'date',
@@ -38,7 +43,7 @@ def download_asx_company_list():
         raise InternetError('Share list not found on ASX!')
 
 
-class Load(object):
+class ETL(object):
     def __init__(
             self,
             codes,
@@ -46,22 +51,24 @@ class Load(object):
             start_date,
             end_date,
             price_type,
+            country,
             session,
-            is_sector,
             load_channel,
             column_name_change,
             overwrite_existing_records,
-            clear_table_first
+            clear_table_first,
+            date_format=None,
         ):
         self.codes = codes
         self.source = source
         self.start_date = start_date
         self.end_date = end_date
         self.price_type = price_type
+        self.country = country
         self.session = session
-        self.is_sector = is_sector
         self.load_channel = load_channel
         self.column_name_change = column_name_change
+        self.date_format = date_format
         self.overwrite_existing_records = overwrite_existing_records
         self.clear_table_first = clear_table_first
 
@@ -82,19 +89,22 @@ class Load(object):
         if self.column_name_change:
             self.res = self.res.rename(columns=self.column_name_change)
 
-    def load_to_db(self):
+    def transform(self):
         self._change_column_name()
-        if self.is_sector is not None:
-            self.res.loc[:, 'is_sector'] = self.is_sector 
+        self.res.loc[:, 'price_type'] = price_type_codes[self.price_type]
+        self.res.loc[:, 'source'] = source_codes[self.source]
+        self.res.loc[:, 'country'] = country_codes[self.country]
         self.res.loc[:, 'create_date'] = pd.datetime.today()
+
+    def load_to_db(self):
         logger.info(
             '{n} {price_type}s updated.'.format(
                 n=self.res.code.nunique(),
                 price_type=self.price_type,
             )
         )
-        to_load = self.load_channel.process_dataframe(self.res)
-        to_load.load_dataframe(
+        self.load_channel.dataframe = self.res
+        self.load_channel.load_dataframe(
             overwrite_existing_records=self.overwrite_existing_records,
             clear_table_first=self.clear_table_first
         )
@@ -106,43 +116,41 @@ def update_market(
         end_date=None,
         source=None,
         price_type=None,
+        country='Australia',
         session=None,
         overwrite_existing_records=False,
         clear_table_first=False
     ):
-    if source == 'yahoo' and price_type == 'share':
-        from .datasets import YahooSharePriceLoad as load_channel
-        is_sector = False 
+    if codes is not None:
+        codes = codes.split(',')
+    if (source == 'yahoo' and price_type == 'share'
+        and country == 'Australia'):
+        load_channel = LoadChannel(SharePrice)
         column_name_change = yahoo_price_name_change
         if codes is None:
             codes = download_asx_company_list()
-        else:
-            # when given codes, just split them to get a list
-            codes = codes.split(',')
         logger.info('There are {n} shares to update.'.format(n=len(codes)))
-    elif source == 'yahoo' and price_type == 'sector':
-        from .datasets import YahooSharePriceLoad as load_channel
-        is_sector = True
+    elif (source == 'yahoo' and price_type == 'sector'
+          and country == 'Australia'):
+        load_channel = LoadChannel(SharePrice)
         column_name_change = yahoo_price_name_change
         if codes is None:
             asx = pd.read_excel('sector_codes.xlsx')
             codes = asx.sector_code.tolist()
-        else:
-            # when given codes, just split them to get a list
-            codes = codes.split(',')
         logger.info('There are {n} sectors to update.'.format(n=len(codes)))
-    load = Load(
+    etl = ETL(
         codes=codes,
         source=source,
         start_date=start_date,
         end_date=end_date,
         price_type=price_type,
-        is_sector=is_sector,
+        country=country,
         load_channel=load_channel,
         column_name_change=column_name_change,
         session=session,
         overwrite_existing_records=overwrite_existing_records,
         clear_table_first=clear_table_first
     )
-    load.download_data()
-    load.load_to_db()
+    etl.download_data()
+    etl.transform()
+    etl.load_to_db()

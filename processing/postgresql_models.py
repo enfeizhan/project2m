@@ -19,6 +19,7 @@ from sqlalchemy.inspection import inspect
 from .app import engine
 
 Base = declarative_base()
+logger = logging.getLogger(__name__)
 
 
 class ColumnsMismatchError(Exception):
@@ -95,7 +96,7 @@ class CSVLoadable(DataframeLoadable):
             if parse_dates:
                 for col in cls.datetime_columns():
                     data[col] = pd.to_datetime(data[col], format=date_format)
-            logging.info('{}: inserting up to row {}'.format(
+            logger.info('{}: inserting up to row {}'.format(
                 filename, (i + 1) * records_per_insert))
 
             load_options = {
@@ -129,7 +130,7 @@ class CSVLoadable(DataframeLoadable):
             if parse_dates:
                 for col in cls.datetime_columns():
                     data[col] = pd.to_datetime(data[col], format=date_format)
-            logging.info('{}: inserting up to row {}'.format(
+            logger.info('{}: inserting up to row {}'.format(
                 filename, (i + 1) * records_per_insert))
 
             if i == 0:
@@ -151,32 +152,52 @@ class CSVLoadable(DataframeLoadable):
 
 class PreSentiment(Base, CSVLoadable):
     __tablename__ = 'pre_sentiment'
-    code = Column(String(255), primary_key=True, nullable=False)
-    counts = Column(Integer, nullable=False)
-    source = Column(String(255), primary_key=True, nullable=False)
-    country = Column(String(50), nullable=False)
+    code = Column(String(20), primary_key=True, nullable=False)
     date = Column(Date, primary_key=True, nullable=False)
+    source = Column(Integer, primary_key=True, nullable=False)
+    country = Column(Integer, nullable=False)
+    counts = Column(Integer, nullable=False)
 
 
-class YahooSharePrice(Base, CSVLoadable):
-    __tablename__ = 'yahoo_share_price'
-    code = Column(String(255), primary_key=True, nullable=False)
+class SharePrice(Base, CSVLoadable):
+    __tablename__ = 'share_price'
+    code = Column(String(20), primary_key=True, nullable=False)
+    date = Column(Date, primary_key=True, nullable=False)
+    source = Column(Integer, primary_key=True, nullable=False)
+    country = Column(Integer, nullable=False)
     open_price = Column(Float, nullable=False)
     high_price = Column(Float, nullable=False)
     low_price = Column(Float, nullable=False)
     close_price = Column(Float, nullable=False)
     adj_close_price = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
-    is_sector = Column(Boolean, nullable=False)
-    date = Column(Date, primary_key=True, nullable=False)
+    price_type = Column(Integer, nullable=False)
     create_date = Column(Date, nullable=False)
+
+
+class LkpCountry(Base, CSVLoadable):
+    __tablename__ = 'lkp_country'
+    country_id = Column(Integer, primary_key=True, nullable=False)
+    country = Column(String(50), nullable=False)
+
+
+class LkpPriceType(Base, CSVLoadable):
+    __tablename__ = 'lkp_price_type'
+    price_type_id = Column(Integer, primary_key=True, nullable=False)
+    price_type = Column(String(50), nullable=False)
+
+
+class LkpPriceSource(Base, CSVLoadable):
+    __tablename__ = 'lkp_price_source'
+    price_source_id = Column(Integer, primary_key=True, nullable=False)
+    price_source = Column(String(50), nullable=False)
+
+
+class LkpPreSentimentSource(Base, CSVLoadable):
+    __tablename__ = 'lkp_pre_sentiment_source'
+    pre_sentiment_source_id = Column(Integer, primary_key=True, nullable=False)
+    pre_sentiment_source = Column(String(50), nullable=False)
 
 
 def create_all_tables():
     Base.metadata.create_all(engine)
-
-Index('idx_presentiment_code', PreSentiment.code)
-Index('idx_presentiment_date', PreSentiment.date)
-Index('idx_presentiment_source', PreSentiment.source)
-Index('idx_yahooshareprice_code', YahooSharePrice.code)
-Index('idx_yahooshareprice_date', YahooSharePrice.date)

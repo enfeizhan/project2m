@@ -37,3 +37,23 @@ def str2bool(string):
 
 today = datetime.now()
 today_str = today.strftime('%Y%m%d')
+country_codes = {
+    'Australia': 0
+}
+price_type_codes = {
+    'share': 0,
+    'sector': 1
+}
+price_source_codes = {
+    'yahoo': 0
+}
+pre_sentiment_source_codes = {
+    'Hotcopper Forum': 0,
+    'Motley Fool': 1
+}
+lkp_tables = [
+    'country',
+    'price_type',
+    'price_source',
+    'pre_sentiment_source'
+]

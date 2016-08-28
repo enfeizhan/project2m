@@ -15,7 +15,7 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 import sys
 sys.path.insert(0, '.')
-from processing import models
+from processing import postgresql_models as models
 target_metadata = models.Base.metadata
 
 # other values from the config, defined by the needs of env.py,
