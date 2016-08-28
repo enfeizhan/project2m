@@ -179,24 +179,28 @@ class LkpCountry(Base, CSVLoadable):
     __tablename__ = 'lkp_country'
     country_id = Column(Integer, primary_key=True, nullable=False)
     country = Column(String(50), nullable=False)
+    create_date = Column(Date)
 
 
 class LkpPriceType(Base, CSVLoadable):
     __tablename__ = 'lkp_price_type'
     price_type_id = Column(Integer, primary_key=True, nullable=False)
     price_type = Column(String(50), nullable=False)
+    create_date = Column(Date)
 
 
 class LkpPriceSource(Base, CSVLoadable):
     __tablename__ = 'lkp_price_source'
     price_source_id = Column(Integer, primary_key=True, nullable=False)
     price_source = Column(String(50), nullable=False)
+    create_date = Column(Date)
 
 
 class LkpPreSentimentSource(Base, CSVLoadable):
     __tablename__ = 'lkp_pre_sentiment_source'
     pre_sentiment_source_id = Column(Integer, primary_key=True, nullable=False)
     pre_sentiment_source = Column(String(50), nullable=False)
+    create_date = Column(Date)
 
 
 def create_all_tables():
