@@ -175,10 +175,38 @@ class SharePrice(Base, CSVLoadable):
     create_date = Column(Date, nullable=False)
 
 
+class Action(Base, CSVLoadable):
+    __tablename__ = 'action'
+    code = Column(String(20), primary_key=True, nullable=False)
+    ex_div_date = Column(Date, primary_key=True, nullable=False)
+    source = Column(Integer, primary_key=True, nullable=False)
+    country = Column(Integer, nullable=False)
+    div_date = Column(Date, nullable=True)
+    pay_date = Column(Date, nullable=True)
+    amount = Column(Float, nullable=True)
+    franking = Column(Float, nullable=True)
+    action_type = Column(Integer, nullable=False)
+    create_date = Column(Date, nullable=True)
+
+
 class LkpCountry(Base, CSVLoadable):
     __tablename__ = 'lkp_country'
     country_id = Column(Integer, primary_key=True, nullable=False)
     country = Column(String(50), nullable=False)
+    create_date = Column(Date)
+
+
+class LkpActionSource(Base, CSVLoadable):
+    __tablename__ = 'lkp_action_source'
+    action_source_id = Column(Integer, primary_key=True, nullable=False)
+    action_source = Column(String(50), nullable=False)
+    create_date = Column(Date)
+
+
+class LkpActionType(Base, CSVLoadable):
+    __tablename__ = 'lkp_action_type'
+    action_type_id = Column(Integer, primary_key=True, nullable=False)
+    action_type = Column(String(50), nullable=False)
     create_date = Column(Date)
 
 

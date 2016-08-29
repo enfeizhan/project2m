@@ -51,9 +51,17 @@ pre_sentiment_source_codes = {
     'Hotcopper Forum': 0,
     'Motley Fool': 1
 }
+action_source_codes = {
+    'yahoo-actions': 0
+}
+action_type_codes = {
+    'dividend': 0
+}
 lkp_tables = [
     'country',
     'price_type',
     'price_source',
-    'pre_sentiment_source'
+    'pre_sentiment_source',
+    'action_source',
+    'action_type'
 ]
