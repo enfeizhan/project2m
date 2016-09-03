@@ -1,12 +1,19 @@
+import pdb
 import pandas as pd
 import pandas_datareader.data as web
 import logging
-from .load_channels import LoadChannel
 from .postgresql_models import SharePrice
+from .postgresql_models import Action
+from .utils import LoadChannel
+from .utils import Extract
+from .utils import Transform
+from .utils import Load
 from .utils import country_codes
 from .utils import price_type_codes
-from .utils import price_source_codes as source_codes
-yahoo_price_name_change ={
+from .utils import price_source_codes
+from .utils import action_source_codes
+from .utils import action_type_codes
+yahoo_price_name_change = {
     'minor': 'code',
     'Date': 'date',
     'Open': 'open_price',
@@ -15,6 +22,10 @@ yahoo_price_name_change ={
     'Close': 'close_price',
     'Volume': 'volume',
     'Adj Close': 'adj_close_price',
+}
+yahoo_action_name_change = {
+    'action': 'action_type',
+    'value': 'amount'
 }
 logger = logging.getLogger(__name__)
 asx_company_list_url = (
@@ -43,79 +54,77 @@ def download_asx_company_list():
         raise InternetError('Share list not found on ASX!')
 
 
-class ETL(object):
-    def __init__(
-            self,
+class PandasDataReaderExtract(Extract):
+    def download_data(self, codes, source,
+                      start_date, end_date,
+                      session):
+        # get data through pandas
+        self.df = web.DataReader(
             codes,
             source,
             start_date,
             end_date,
-            price_type,
-            country,
-            session,
-            load_channel,
-            column_name_change,
-            overwrite_existing_records,
-            clear_table_first,
-            date_format=None,
-        ):
-        self.codes = codes
-        self.source = source
-        self.start_date = start_date
-        self.end_date = end_date
-        self.price_type = price_type
-        self.country = country
-        self.session = session
-        self.load_channel = load_channel
-        self.column_name_change = column_name_change
-        self.date_format = date_format
-        self.overwrite_existing_records = overwrite_existing_records
-        self.clear_table_first = clear_table_first
-
-    def download_data(self):
-        if not (self.start_date and self.end_date):
-            raise IncompleteDateRangeError('Incomplete time range!')
-        # get data through pandas
-        self.res = web.DataReader(
-            self.codes,
-            self.source,
-            self.start_date,
-            self.end_date,
-            session=self.session
+            session=session
         ).to_frame()
-        self.res = self.res.reset_index()
+        self.reset_index()
 
-    def _change_column_name(self):
-        if self.column_name_change:
-            self.res = self.res.rename(columns=self.column_name_change)
 
-    def transform(self):
-        self._change_column_name()
-        self.res.loc[:, 'price_type'] = price_type_codes[self.price_type]
-        self.res.loc[:, 'source'] = source_codes[self.source]
-        self.res.loc[:, 'country'] = country_codes[self.country]
-        self.res.loc[:, 'create_date'] = pd.datetime.today()
-
-    def load_to_db(self):
-        logger.info(
-            '{n} {price_type}s updated.'.format(
-                n=self.res.code.nunique(),
-                price_type=self.price_type,
-            )
-        )
-        self.load_channel.dataframe = self.res
-        self.load_channel.load_dataframe(
-            overwrite_existing_records=self.overwrite_existing_records,
-            clear_table_first=self.clear_table_first
-        )
+class PandasDataReader(PandasDataReaderExtract, Transform, Load):
+    pass
     
+
+class PandasDataReaderActionExtract(Extract):
+    def download_data(self, code, source,
+                      start_date, end_date,
+                      session):
+        # get data through pandas
+        if not hasattr(self, 'df'):
+            self.df = pd.DataFrame({})
+        dat = web.DataReader(
+            code,
+            source,
+            start_date,
+            end_date,
+            session=session
+        )
+        dat.loc[:, 'code'] = code
+        self.df = self.df.append(dat)
+
+
+class PandasDataReaderActionTransform(Transform):
+    def reset_index(self):
+        self.df.index.name = 'date'
+        self.df = self.df.reset_index()
+
+
+    def fill_ex_div_date(self):
+        self.df.loc[:, 'ex_div_date'] = self.df.loc[:, 'date']
+
+    def categorise_action_type(self):
+        self.df.loc[:, 'action_type'] = (
+            self
+            .df
+            .loc[:, 'action_type']
+            .str
+            .lower()
+            .map(action_type_codes)
+        )
+
+
+class PandasDataReaderAction(
+        PandasDataReaderActionExtract,
+        PandasDataReaderActionTransform,
+        PandasDataReader,
+    ):
+    pass
+
 
 def update_market(
         codes=None,
         start_date=None,
         end_date=None,
         source=None,
-        price_type=None,
+        data_type=None,
         country='Australia',
         session=None,
         overwrite_existing_records=False,
@@ -123,34 +132,97 @@ def update_market(
     ):
     if codes is not None:
         codes = codes.split(',')
-    if (source == 'yahoo' and price_type == 'share'
+    if (source == 'yahoo' and data_type == 'share'
         and country == 'Australia'):
+        etl = PandasDataReader()
         load_channel = LoadChannel(SharePrice)
         column_name_change = yahoo_price_name_change
         if codes is None:
             codes = download_asx_company_list()
         logger.info('There are {n} shares to update.'.format(n=len(codes)))
-    elif (source == 'yahoo' and price_type == 'sector'
+        etl.download_data(
+            codes,
+            source,
+            start_date,
+            end_date,
+            session
+        )
+        etl.change_column_name(column_name_change)
+        col_codes = {
+            'price_type': price_type_codes[data_type],
+            'source': price_source_codes[source],
+            'country': country_codes[country],
+            'create_date': pd.datetime.today()
+        }
+        etl.attach_infos(col_codes)
+        etl.load_to_db(
+            load_channel,
+            overwrite_existing_records,
+            clear_table_first
+        )
+        etl.logging(data_type, 'code')
+    elif (source == 'yahoo' and data_type == 'sector'
           and country == 'Australia'):
+        etl = PandasDataReader()
         load_channel = LoadChannel(SharePrice)
         column_name_change = yahoo_price_name_change
         if codes is None:
             asx = pd.read_excel('sector_codes.xlsx')
             codes = asx.sector_code.tolist()
         logger.info('There are {n} sectors to update.'.format(n=len(codes)))
-    etl = ETL(
-        codes=codes,
-        source=source,
-        start_date=start_date,
-        end_date=end_date,
-        price_type=price_type,
-        country=country,
-        load_channel=load_channel,
-        column_name_change=column_name_change,
-        session=session,
-        overwrite_existing_records=overwrite_existing_records,
-        clear_table_first=clear_table_first
-    )
-    etl.download_data()
-    etl.transform()
-    etl.load_to_db()
+        etl.download_data(
+            codes,
+            source,
+            start_date,
+            end_date,
+            session
+        )
+        etl.change_column_name(column_name_change)
+        col_codes = {
+            'price_type': price_type_codes[data_type],
+            'source': price_source_codes[source],
+            'country': country_codes[country],
+            'create_date': pd.datetime.today()
+        }
+        etl.attach_infos(col_codes)
+        etl.load_to_db(
+            load_channel,
+            overwrite_existing_records,
+            clear_table_first
+        )
+        etl.logging(data_type, 'code')
+    elif (source == 'yahoo-actions' and data_type == 'action'
+          and country == 'Australia'):
+        etl = PandasDataReaderAction()
+        load_channel = LoadChannel(Action)
+        column_name_change = yahoo_action_name_change
+        if codes is None:
+            codes = download_asx_company_list()
+        logger.info('There are {n} shares to update.'.format(n=len(codes)))
+        for code in codes:
+            etl.download_data(
+                code,
+                source,
+                start_date,
+                end_date,
+                session
+            )
+        etl.change_column_name(column_name_change)
+        col_codes = {
+            'source': action_source_codes[source],
+            'country': country_codes[country],
+            'div_date': None,
+            'pay_date': None,
+            'franking': None,
+        }
+        etl.attach_infos(col_codes)
+        etl.categorise_action_type()
+        etl.reset_index()
+        etl.fill_ex_div_date()
+        etl.attach_create_date()
+        etl.load_to_db(
+            load_channel,
+            overwrite_existing_records,
+            clear_table_first
+        )
+        etl.logging(data_type, 'code')

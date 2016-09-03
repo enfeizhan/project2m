@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from . import utils
 from . import postgresql_models
-from .load_channels import LoadChannel
+from .utils import LoadChannel
 from .utils import today
 
 logger = logging.getLogger(__name__)

@@ -178,9 +178,10 @@ class SharePrice(Base, CSVLoadable):
 class Action(Base, CSVLoadable):
     __tablename__ = 'action'
     code = Column(String(20), primary_key=True, nullable=False)
-    ex_div_date = Column(Date, primary_key=True, nullable=False)
+    date = Column(Date, primary_key=True, nullable=False)
     source = Column(Integer, primary_key=True, nullable=False)
     country = Column(Integer, nullable=False)
+    ex_div_date = Column(Date, nullable=True)
     div_date = Column(Date, nullable=True)
     pay_date = Column(Date, nullable=True)
     amount = Column(Float, nullable=True)
