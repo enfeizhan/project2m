@@ -1,4 +1,3 @@
-import os
 import datetime
 import requests_cache
 import logging
@@ -6,14 +5,14 @@ import pandas as pd
 from docopt import docopt
 from pandas.tseries.offsets import CustomBusinessDay
 from processing.bulk_update import update_market
+from processing.bulk_update import scrape_intelligent_investor_dividend
 from processing.pre_sentiment import scrape_motley_fool
 from processing.pre_sentiment import scrape_hotcopper_forum
 from processing.pre_sentiment import run_pre_sentiment
-from processing.update_lkp_tables import update_lkp_table
-from processing.update_lkp_tables import update_all_lkp_tables
 from processing.utils import today
 from processing.utils import today_str
 from processing.utils import ASXTradingCalendar
+from processing.self_correct_tools import correcting_code
 asx_trading_calendar = ASXTradingCalendar()
 asx_dayoffset = CustomBusinessDay(calendar=ASXTradingCalendar())
 last_business_day = today - asx_dayoffset
@@ -23,9 +22,9 @@ cmd_doc = '''
       cli manual <start> <end> [--price-type=PRICE-TYPE] [--source=SITE] [--country=COUNTRY] [--codes=CODES]
       cli startover [--price-type=PRICE-TYPE] [--source=SITE] [--country=COUNTRY] [--codes=CODES]
       cli update actions --source=SITE [--codes=CODES]
-      cli update all-lkp-tables
-      cli update --lkp-table=LKP-TABLE
       cli pre-sentiment [--source=SITE]
+      cli dividend [--source=SITE] --npages=NPAGES [--earliest-date=EARLIEST-DATE]
+      cli correcting-code <codename> <wrong-code> <correct-code>
 
     Options:
       -h --help     Show this screen.
@@ -35,7 +34,8 @@ cmd_doc = '''
       --source=SITE  Data source [default: yahoo].
       --country=COUNTRY  Country for the exchange [default: Australia].
       --price-type=PRICE-TYPE  Price type (share/sector) [default: share].
-      --lkp-table=LKP-TABLE  Look-up table.
+      --npages=NPAGES  Number of pages to scrape.
+      --earliest-date=EARLIEST  Earliest date to go back for scraping.
 '''
 logging.basicConfig(
     filename='project2m.log',
@@ -120,11 +120,7 @@ if __name__ == '__main__':
         else:
             run_pre_sentiment()
     elif arguments['update']:
-        if arguments['all-lkp-tables']:
-            update_all_lkp_tables()
-        elif arguments['--lkp-table']:
-            update_lkp_table(arguments['--lkp-table'])
-        elif arguments['actions'] and arguments['--source'] == 'yahoo-actions':
+        if arguments['actions'] and arguments['--source'] == 'yahoo-actions':
             update_market(
                 codes=arguments['--codes'],
                 start_date=pd.to_datetime('19900101'),
@@ -135,5 +131,17 @@ if __name__ == '__main__':
                 session=session,
                 overwrite_existing_records=True
             )
+    elif arguments['dividend']:
+        if arguments['--source'] == 'IntelligentInvestor':
+            scrape_intelligent_investor_dividend(
+                int(arguments['--npages']),
+                pd.to_datetime(arguments['--earliest-date'])
+            )
+    elif arguments['correcting-code']:
+        correcting_code(
+            arguments['<codename>'],
+            arguments['<wrong-code>'],
+            arguments['<correct-code>']
+        )
     else:
         raise CommandCombinationError

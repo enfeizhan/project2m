@@ -1,16 +1,11 @@
-import os
 import pandas as pd
-import datetime
 
 import logging
 
-from sqlalchemy import BigInteger
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Date
 from sqlalchemy import DateTime
 from sqlalchemy import Float
-from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import and_
@@ -52,7 +47,7 @@ class DataframeLoadable:
         primary_key = inspect(cls).primary_key[0].name
         result = csv_columns == table_columns
         if not result:
-            if primary_key in ('pk', 'id'):
+            if 'id' in primary_key or 'pk' in primary_key:
                 table_columns.discard(primary_key)
         result = csv_columns == table_columns
         return result
@@ -154,8 +149,8 @@ class PreSentiment(Base, CSVLoadable):
     __tablename__ = 'pre_sentiment'
     code = Column(String(20), primary_key=True, nullable=False)
     date = Column(Date, primary_key=True, nullable=False)
-    source = Column(Integer, primary_key=True, nullable=False)
-    country = Column(Integer, nullable=False)
+    source_id = Column(Integer, primary_key=True, nullable=False)
+    country_id = Column(Integer, nullable=False)
     counts = Column(Integer, nullable=False)
 
 
@@ -163,15 +158,15 @@ class SharePrice(Base, CSVLoadable):
     __tablename__ = 'share_price'
     code = Column(String(20), primary_key=True, nullable=False)
     date = Column(Date, primary_key=True, nullable=False)
-    source = Column(Integer, primary_key=True, nullable=False)
-    country = Column(Integer, nullable=False)
+    source_id = Column(Integer, primary_key=True, nullable=False)
+    country_id = Column(Integer, nullable=False)
     open_price = Column(Float, nullable=False)
     high_price = Column(Float, nullable=False)
     low_price = Column(Float, nullable=False)
     close_price = Column(Float, nullable=False)
     adj_close_price = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
-    price_type = Column(Integer, nullable=False)
+    price_type_id = Column(Integer, nullable=False)
     create_date = Column(Date, nullable=False)
 
 
@@ -179,14 +174,14 @@ class Action(Base, CSVLoadable):
     __tablename__ = 'action'
     code = Column(String(20), primary_key=True, nullable=False)
     date = Column(Date, primary_key=True, nullable=False)
-    source = Column(Integer, primary_key=True, nullable=False)
-    country = Column(Integer, nullable=False)
+    source_id = Column(Integer, primary_key=True, nullable=False)
+    country_id = Column(Integer, nullable=False)
     ex_div_date = Column(Date, nullable=True)
     div_date = Column(Date, nullable=True)
     pay_date = Column(Date, nullable=True)
     amount = Column(Float, nullable=True)
     franking = Column(Float, nullable=True)
-    action_type = Column(Integer, nullable=False)
+    action_type_id = Column(Integer, nullable=False)
     create_date = Column(Date, nullable=True)
 
 
@@ -194,13 +189,6 @@ class LkpCountry(Base, CSVLoadable):
     __tablename__ = 'lkp_country'
     country_id = Column(Integer, primary_key=True, nullable=False)
     country = Column(String(50), nullable=False)
-    create_date = Column(Date)
-
-
-class LkpActionSource(Base, CSVLoadable):
-    __tablename__ = 'lkp_action_source'
-    action_source_id = Column(Integer, primary_key=True, nullable=False)
-    action_source = Column(String(50), nullable=False)
     create_date = Column(Date)
 
 
@@ -218,17 +206,10 @@ class LkpPriceType(Base, CSVLoadable):
     create_date = Column(Date)
 
 
-class LkpPriceSource(Base, CSVLoadable):
-    __tablename__ = 'lkp_price_source'
-    price_source_id = Column(Integer, primary_key=True, nullable=False)
-    price_source = Column(String(50), nullable=False)
-    create_date = Column(Date)
-
-
-class LkpPreSentimentSource(Base, CSVLoadable):
-    __tablename__ = 'lkp_pre_sentiment_source'
-    pre_sentiment_source_id = Column(Integer, primary_key=True, nullable=False)
-    pre_sentiment_source = Column(String(50), nullable=False)
+class LkpSource(Base, CSVLoadable):
+    __tablename__ = 'lkp_source'
+    source_id = Column(Integer, primary_key=True, nullable=False)
+    source = Column(String(50), nullable=False)
     create_date = Column(Date)
 
 

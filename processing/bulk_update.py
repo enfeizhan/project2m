@@ -1,18 +1,14 @@
-import pdb
 import pandas as pd
+import numpy as np
 import pandas_datareader.data as web
 import logging
 from .postgresql_models import SharePrice
 from .postgresql_models import Action
-from .utils import LoadChannel
-from .utils import Extract
-from .utils import Transform
-from .utils import Load
-from .utils import country_codes
-from .utils import price_type_codes
-from .utils import price_source_codes
-from .utils import action_source_codes
-from .utils import action_type_codes
+from .etl_tools import LoadChannel
+from .etl_tools import Extract
+from .etl_tools import Transform
+from .etl_tools import Load
+from .etl_tools import TablesDownloader
 yahoo_price_name_change = {
     'minor': 'code',
     'Date': 'date',
@@ -71,7 +67,7 @@ class PandasDataReaderExtract(Extract):
 
 class PandasDataReader(PandasDataReaderExtract, Transform, Load):
     pass
-    
+
 
 class PandasDataReaderActionExtract(Extract):
     def download_data(self, code, source,
@@ -96,7 +92,6 @@ class PandasDataReaderActionTransform(Transform):
         self.df.index.name = 'date'
         self.df = self.df.reset_index()
 
-
     def fill_ex_div_date(self):
         self.df.loc[:, 'ex_div_date'] = self.df.loc[:, 'date']
 
@@ -107,7 +102,6 @@ class PandasDataReaderActionTransform(Transform):
             .loc[:, 'action_type']
             .str
             .lower()
-            .map(action_type_codes)
         )
 
 
@@ -115,7 +109,7 @@ class PandasDataReaderAction(
         PandasDataReaderActionExtract,
         PandasDataReaderActionTransform,
         PandasDataReader,
-    ):
+        ):
     pass
 
 
@@ -129,11 +123,11 @@ def update_market(
         session=None,
         overwrite_existing_records=False,
         clear_table_first=False
-    ):
+        ):
     if codes is not None:
         codes = codes.split(',')
     if (source == 'yahoo' and data_type == 'share'
-        and country == 'Australia'):
+       and country == 'Australia'):
         etl = PandasDataReader()
         load_channel = LoadChannel(SharePrice)
         column_name_change = yahoo_price_name_change
@@ -149,16 +143,19 @@ def update_market(
         )
         etl.change_column_name(column_name_change)
         col_codes = {
-            'price_type': price_type_codes[data_type],
-            'source': price_source_codes[source],
-            'country': country_codes[country],
+            'price_type': data_type,
+            'source': source,
+            'country': country,
             'create_date': pd.datetime.today()
         }
         etl.attach_infos(col_codes)
         etl.load_to_db(
             load_channel,
             overwrite_existing_records,
-            clear_table_first
+            clear_table_first,
+            'source',
+            'country',
+            'price_type'
         )
         etl.logging(data_type, 'code')
     elif (source == 'yahoo' and data_type == 'sector'
@@ -179,16 +176,19 @@ def update_market(
         )
         etl.change_column_name(column_name_change)
         col_codes = {
-            'price_type': price_type_codes[data_type],
-            'source': price_source_codes[source],
-            'country': country_codes[country],
+            'price_type': data_type,
+            'source': source,
+            'country': country,
             'create_date': pd.datetime.today()
         }
         etl.attach_infos(col_codes)
         etl.load_to_db(
             load_channel,
             overwrite_existing_records,
-            clear_table_first
+            clear_table_first,
+            'price_type',
+            'source',
+            'country'
         )
         etl.logging(data_type, 'code')
     elif (source == 'yahoo-actions' and data_type == 'action'
@@ -209,8 +209,8 @@ def update_market(
             )
         etl.change_column_name(column_name_change)
         col_codes = {
-            'source': action_source_codes[source],
-            'country': country_codes[country],
+            'source': source,
+            'country': country,
             'div_date': None,
             'pay_date': None,
             'franking': None,
@@ -223,6 +223,64 @@ def update_market(
         etl.load_to_db(
             load_channel,
             overwrite_existing_records,
-            clear_table_first
+            clear_table_first,
+            'source',
+            'country'
         )
         etl.logging(data_type, 'code')
+
+
+# intelligent investor dividend
+def scrape_intelligent_investor_dividend(npages, earliest_date=None):
+    intel = TablesDownloader(
+        url='https://www.intelligentinvestor.com.au/companies/dividends'
+    )
+    intel.download_data(
+        'tag_name',
+        'tbody',
+        npages=npages,
+        next_button_by='xpath',
+        next_button_identifier='//ul[@class="pagination"]/li[3]/a',
+        earliest_date=earliest_date,
+        date_pattern=r'\d{2} [A-Z][a-z]{2} \d{4}',
+    )
+    intel.to_dataframe(
+        header=None,
+        parse_dates={'ex_div_date': [1, 2, 3], 'pay_date': [4, 5, 6]},
+        dayfirst=True,
+        infer_datetime_format=True,
+    )
+    intel.change_column_name(
+        column_name_change={0: 'code', 7: 'amount', 8: 'franking'}
+    )
+    col_codes = {
+        'action_type': 'dividend',
+        'source': 'IntelligentInvestor',
+        'country': 'Australia',
+        'create_date': pd.datetime.today()
+    }
+    intel.attach_infos(col_codes)
+    intel.df = intel.df.loc[(intel.df.code.str.len() == 3).values, :].copy()
+    intel.attach_suffix('code', '.AX')
+    intel.df.loc[:, 'amount'] = (
+        intel
+        .df
+        .loc[:, 'amount']
+        .str[:-1]
+        .apply(lambda x: float(x))
+    )
+    intel.df.loc[:, 'franking'] = (
+        intel
+        .df
+        .loc[:, 'franking']
+        .str[:-1]
+        .apply(lambda x: float(x)/100)
+    )
+    intel.df.loc[:, 'date'] = intel.df.loc[:, 'ex_div_date']
+    intel.df.loc[:, 'div_date'] = np.nan
+    load_channel = LoadChannel(Action)
+    intel.load_to_db(
+        load_channel,
+        overwrite_existing_records=True,
+        *['action_type', 'source', 'country']
+    )
