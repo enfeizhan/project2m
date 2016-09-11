@@ -39,7 +39,8 @@ def scrape_motley_fool():
         motley_fool.attach_suffix('code', '.AX')
         motley_fool.load_to_db(
             load_channel,
-            overwrite_existing_records=True,
+            True,
+            False,
             *['source', 'country']
         )
     motley_fool.count_codes('index_list')
@@ -47,7 +48,8 @@ def scrape_motley_fool():
         motley_fool.attach_infos(col_codes)
         motley_fool.load_to_db(
             load_channel,
-            overwrite_existing_records=True,
+            True,
+            False,
             *['source', 'country']
         )
     motley_fool.quit()
@@ -82,8 +84,9 @@ def scrape_hotcopper_forum():
         hotcopper_forum.attach_suffix('code', '.AX')
         hotcopper_forum.load_to_db(
             load_channel,
-            overwrite_existing_records=True,
-            *['source', 'country']
+            True,
+            False,
+            *('source', 'country')
         )
 
 

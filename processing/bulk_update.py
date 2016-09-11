@@ -9,6 +9,7 @@ from .etl_tools import Extract
 from .etl_tools import Transform
 from .etl_tools import Load
 from .etl_tools import TablesDownloader
+from .utils import today
 yahoo_price_name_change = {
     'minor': 'code',
     'Date': 'date',
@@ -146,7 +147,7 @@ def update_market(
             'price_type': data_type,
             'source': source,
             'country': country,
-            'create_date': pd.datetime.today()
+            'create_date': today.date()
         }
         etl.attach_infos(col_codes)
         etl.load_to_db(
@@ -179,7 +180,7 @@ def update_market(
             'price_type': data_type,
             'source': source,
             'country': country,
-            'create_date': pd.datetime.today()
+            'create_date': today.date()
         }
         etl.attach_infos(col_codes)
         etl.load_to_db(
@@ -214,18 +215,17 @@ def update_market(
             'div_date': None,
             'pay_date': None,
             'franking': None,
+            'create_date': today.date()
         }
         etl.attach_infos(col_codes)
         etl.categorise_action_type()
         etl.reset_index()
         etl.fill_ex_div_date()
-        etl.attach_create_date()
         etl.load_to_db(
             load_channel,
             overwrite_existing_records,
             clear_table_first,
-            'source',
-            'country'
+            *('source', 'country', 'action_type')
         )
         etl.logging(data_type, 'code')
 
@@ -257,7 +257,7 @@ def scrape_intelligent_investor_dividend(npages, earliest_date=None):
         'action_type': 'dividend',
         'source': 'IntelligentInvestor',
         'country': 'Australia',
-        'create_date': pd.datetime.today()
+        'create_date': today.date()
     }
     intel.attach_infos(col_codes)
     intel.df = intel.df.loc[(intel.df.code.str.len() == 3).values, :].copy()
