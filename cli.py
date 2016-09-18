@@ -5,6 +5,7 @@ import pandas as pd
 from docopt import docopt
 from pandas.tseries.offsets import CustomBusinessDay
 from processing.bulk_update import update_market
+from processing.bulk_update import start_over
 from processing.bulk_update import scrape_intelligent_investor_dividend
 from processing.pre_sentiment import scrape_motley_fool
 from processing.pre_sentiment import scrape_hotcopper_forum
@@ -102,7 +103,7 @@ if __name__ == '__main__':
                 price_type=arguments['--price-type'].capitalize()
             )
         )
-        update_market(
+        start_over(
             codes=arguments['--codes'],
             start_date=pd.to_datetime('19900101'),
             end_date=today,
