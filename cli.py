@@ -107,7 +107,7 @@ if __name__ == '__main__':
             start_date=pd.to_datetime('19900101'),
             end_date=today,
             source=arguments['--source'],
-            data_type=arguments['--price_type'],
+            data_type=arguments['--price-type'],
             country=arguments['--country'],
             session=session,
             clear_table_first=True
