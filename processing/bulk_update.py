@@ -284,3 +284,48 @@ def scrape_intelligent_investor_dividend(npages, earliest_date=None):
         overwrite_existing_records=True,
         *['action_type', 'source', 'country']
     )
+
+
+class IndexmundiCommodity(TablesDownloader):
+    def __init__(self, url, commodity_cat, commodity, time_range, currency):
+        super(IndexmundiCommodity, self).__init__(url)
+        commodity_cat_tab = self.find_element('link_text', commodity_cat)
+        commodity_cat_tab.click()
+        commodity_tab = self.find_element('link_text', commodity)
+        commodity_tab.click()
+        time_range_button = self.find_element('link_text', time_range)
+        time_range_button.click()
+        self.select = self.Select(self.find_element('id', 'listCurrency'))
+        self.select.select_by_visible_text(currency)
+
+
+def scrape_indexmundi_commodity(
+        commodity_cat,
+        commodity,
+        time_range,
+        currency,
+        ):
+    indexmundi = IndexmundiCommodity(
+        url='http://www.indexmundi.com/commodities/',
+        commodity_cat=commodity_cat,
+        commodity=commodity,
+        time_range=time_range,
+        currency=currency
+    )
+    indexmundi.download_data('id', 'gvPrices')
+
+    def read_table(table_str, **kwargs):
+        table_strs = table_str.split('\n')
+        table_row1 = [table_strs[1].split(' ')[:-1]]
+        table_rows = [table_str.split(' ')[:3] for table_str in table_strs[2:]]
+        table = pd.DataFrame(table_row1 + table_rows)
+        table.loc[:, 1] = table.loc[:, 0] + table.loc[:, 1]
+        table = table.drop(0, axis=1)
+        table.columns = ['date', 'price']
+        table.loc[:, 'date'] = pd.to_datetime(
+            table.loc[:, 'date'],
+            format='%b%Y'
+        )
+        return table
+
+    indexmundi.to_dataframe(read_table)
