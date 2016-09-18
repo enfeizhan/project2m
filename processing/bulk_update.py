@@ -56,13 +56,17 @@ class PandasDataReaderExtract(Extract):
                       start_date, end_date,
                       session):
         # get data through pandas
-        self.df = web.DataReader(
-            codes,
-            source,
-            start_date,
-            end_date,
-            session=session
-        ).to_frame()
+        self.df = pd.DataFrame({})
+        try:
+            self.df = web.DataReader(
+                codes,
+                source,
+                start_date,
+                end_date,
+                session=session
+            ).to_frame()
+        except:
+            return
         self.reset_index()
 
 
@@ -77,13 +81,16 @@ class PandasDataReaderActionExtract(Extract):
         # get data through pandas
         if not hasattr(self, 'df'):
             self.df = pd.DataFrame({})
-        dat = web.DataReader(
-            code,
-            source,
-            start_date,
-            end_date,
-            session=session
-        )
+        try:
+            dat = web.DataReader(
+                code,
+                source,
+                start_date,
+                end_date,
+                session=session
+            )
+        except:
+            return
         dat.loc[:, 'code'] = code
         self.df = self.df.append(dat)
 
@@ -259,6 +266,8 @@ def start_over(
                 end_date,
                 session
             )
+            if etl.df.empty:
+                continue
             etl.change_column_name(column_name_change)
             col_codes = {
                 'price_type': data_type,
@@ -292,6 +301,8 @@ def start_over(
                 end_date,
                 session
             )
+            if etl.df.empty:
+                continue
             etl.change_column_name(column_name_change)
             col_codes = {
                 'price_type': data_type,
