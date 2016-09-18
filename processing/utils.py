@@ -1,4 +1,6 @@
+import logging
 from datetime import timedelta
+from datetime import datetime
 from pandas.tseries.holiday import AbstractHolidayCalendar
 from pandas.tseries.holiday import Holiday
 from pandas.tseries.holiday import next_monday
@@ -6,6 +8,9 @@ from pandas.tseries.holiday import MO
 from pandas.tseries.holiday import GoodFriday
 from pandas.tseries.holiday import EasterMonday
 from pandas.tseries.holiday import DateOffset
+
+
+logger = logging.getLogger(__name__)
 
 
 def my_next_monday_or_tuesday(dt):
@@ -30,6 +35,10 @@ class ASXTradingCalendar(AbstractHolidayCalendar):
                 observance=my_next_monday_or_tuesday),
     ]
 
+today = datetime.now()
+today_str = today.strftime('%Y%m%d')
 
-def str2bool(string):
-    return string == 'True'
+
+def tablename_to_modelname(name):
+    name_list = [word.capitalize() for word in name.split('_')]
+    return ''.join(name_list)
