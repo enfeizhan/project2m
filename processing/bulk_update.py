@@ -230,6 +230,122 @@ def update_market(
         etl.logging(data_type, 'code')
 
 
+def start_over(
+        codes=None,
+        start_date=None,
+        end_date=None,
+        source=None,
+        data_type=None,
+        country='Australia',
+        session=None,
+        overwrite_existing_records=False,
+        clear_table_first=False
+        ):
+    if codes is not None:
+        codes = codes.split(',')
+    if (source == 'yahoo' and data_type == 'share'
+       and country == 'Australia'):
+        etl = PandasDataReader()
+        load_channel = LoadChannel(SharePrice)
+        column_name_change = yahoo_price_name_change
+        if codes is None:
+            codes = download_asx_company_list()
+        logger.info('There are {n} shares to update.'.format(n=len(codes)))
+        for code in codes:
+            etl.download_data(
+                [code],
+                source,
+                start_date,
+                end_date,
+                session
+            )
+            etl.change_column_name(column_name_change)
+            col_codes = {
+                'price_type': data_type,
+                'source': source,
+                'country': country,
+                'create_date': today.date()
+            }
+            etl.attach_infos(col_codes)
+            etl.load_to_db(
+                load_channel,
+                overwrite_existing_records,
+                clear_table_first,
+                'source',
+                'country',
+                'price_type'
+            )
+    elif (source == 'yahoo' and data_type == 'sector'
+          and country == 'Australia'):
+        etl = PandasDataReader()
+        load_channel = LoadChannel(SharePrice)
+        column_name_change = yahoo_price_name_change
+        if codes is None:
+            asx = pd.read_excel('sector_codes.xlsx')
+            codes = asx.sector_code.tolist()
+        logger.info('There are {n} sectors to update.'.format(n=len(codes)))
+        for code in codes:
+            etl.download_data(
+                [code],
+                source,
+                start_date,
+                end_date,
+                session
+            )
+            etl.change_column_name(column_name_change)
+            col_codes = {
+                'price_type': data_type,
+                'source': source,
+                'country': country,
+                'create_date': today.date()
+            }
+            etl.attach_infos(col_codes)
+            etl.load_to_db(
+                load_channel,
+                overwrite_existing_records,
+                clear_table_first,
+                'price_type',
+                'source',
+                'country'
+            )
+    elif (source == 'yahoo-actions' and data_type == 'action'
+          and country == 'Australia'):
+        etl = PandasDataReaderAction()
+        load_channel = LoadChannel(Action)
+        column_name_change = yahoo_action_name_change
+        if codes is None:
+            codes = download_asx_company_list()
+        logger.info('There are {n} shares to update.'.format(n=len(codes)))
+        for code in codes:
+            etl.download_data(
+                code,
+                source,
+                start_date,
+                end_date,
+                session
+            )
+        etl.change_column_name(column_name_change)
+        col_codes = {
+            'source': source,
+            'country': country,
+            'div_date': None,
+            'pay_date': None,
+            'franking': None,
+            'create_date': today.date()
+        }
+        etl.attach_infos(col_codes)
+        etl.categorise_action_type()
+        etl.reset_index()
+        etl.fill_ex_div_date()
+        etl.load_to_db(
+            load_channel,
+            overwrite_existing_records,
+            clear_table_first,
+            *('source', 'country', 'action_type')
+        )
+        etl.logging(data_type, 'code')
+
+
 # intelligent investor dividend
 def scrape_intelligent_investor_dividend(npages, earliest_date=None):
     intel = TablesDownloader(
