@@ -111,7 +111,7 @@ if __name__ == '__main__':
             data_type=arguments['--price-type'],
             country=arguments['--country'],
             session=session,
-            clear_table_first=True
+            clear_table_first=False
         )
     elif arguments['pre-sentiment']:
         if arguments['--source'] == 'MotleyFool':
