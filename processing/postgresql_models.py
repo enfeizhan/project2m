@@ -8,6 +8,7 @@ from sqlalchemy import DateTime
 from sqlalchemy import Float
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Index
 from sqlalchemy import and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
@@ -215,3 +216,19 @@ class LkpSource(Base, CSVLoadable):
 
 def create_all_tables():
     Base.metadata.create_all(engine)
+
+
+Index('idx_pre_sentiment_code', PreSentiment.code)
+Index('idx_pre_sentiment_date', PreSentiment.date)
+Index('idx_pre_sentiment_source_id', PreSentiment.source_id)
+Index('idx_pre_sentiment_country_id', PreSentiment.country_id)
+Index('idx_share_price_code', SharePrice.code)
+Index('idx_share_price_date', SharePrice.date)
+Index('idx_share_price_source_id', SharePrice.source_id)
+Index('idx_share_price_country_id', SharePrice.country_id)
+Index('idx_share_price_price_type_id', SharePrice.price_type_id)
+Index('idx_action_code', Action.code)
+Index('idx_action_date', Action.date)
+Index('idx_action_source_id', Action.source_id)
+Index('idx_action_country_id', Action.country_id)
+Index('idx_action_action_type_id', Action.action_type_id)
