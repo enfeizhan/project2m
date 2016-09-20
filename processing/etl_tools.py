@@ -257,14 +257,14 @@ class CodesCounter(WebScraper):
                 text_identifier
             ).text
             for patterns_name, pattern in patterns.items():
-                patterns = (
+                matched_patterns = (
                     getattr(self, patterns_name) +
                     list(set(re.findall(pattern, art_text)))
                 )
                 setattr(
                     self,
                     patterns_name,
-                    patterns
+                    matched_patterns
                 )
 
     def count_codes(self, codes_name):

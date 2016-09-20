@@ -53,6 +53,7 @@ def scrape_motley_fool():
             *['source', 'country']
         )
     motley_fool.quit()
+    logger.info('Counted codes from Motley Fool.')
 
 
 def scrape_hotcopper_forum():
@@ -88,8 +89,9 @@ def scrape_hotcopper_forum():
             False,
             *('source', 'country')
         )
+    logger.info('Scraped hot topic counts from Hotcopper Forum.')
 
 
 def run_pre_sentiment():
-    scrape_hotcopper_forum()
     scrape_motley_fool()
+    scrape_hotcopper_forum()
