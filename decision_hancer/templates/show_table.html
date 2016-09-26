@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
+  <form action="{{ url_for('query_db') }}" method="post" class="query">
+    <dl>
+        <dt>Codes (Separated by comma):</dt>
+      <dd><input type="text" size="30" name="codes"></dd>
+      <dt>Start Date:</dt>
+      <dd><input type="text" name="start_date" size="10"></dd>
+      <dt>End Date:</dt>
+      <dd><input type="text" name="end_date" size="10"></dd><br>
+      <dd>
+         <input type="submit" value="Download result" name="download">
+         <input type="submit" value="Show table" name="show_table">
+      </dd>
+      </dl>
+  </form>
+  {% if res_table %}
+    <div>{{ res_table|safe }}</div>
+  {% endif %}
+{% endblock %}
