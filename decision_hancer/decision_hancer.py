@@ -9,7 +9,7 @@ from flask import make_response
 # from flask import abort
 from flask import render_template
 # from flask import flash
-from ..processing.app import engine
+from app import engine
 
 
 # create our little application :)
