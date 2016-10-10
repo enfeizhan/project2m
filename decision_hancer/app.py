@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from . import secrets
+import secrets
 
 
 def make_sa_conn_str(host, user, password, dbname, **options):
