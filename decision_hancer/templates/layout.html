@@ -4,8 +4,9 @@
 <div class="page">
   <h2>Decisionhancer Dashboard</h2>
   <div class="metanav">
-    <a href="{{ url_for('dashboard') }}">Home</a>
+    <a href="{{ url_for('home') }}">Home</a>
     <a href="{{ url_for('show_table') }}">Show Share Price</a>
+    <a href="{{ url_for('last_11_business') }}">Download Last 11 Business Days</a>
   </div>
   {% block body %}{% endblock %}
 </div>
