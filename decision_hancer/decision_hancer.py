@@ -40,13 +40,13 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/show_table')
-def show_table():
-    return render_template('show_table.html')
+@app.route('/chosen_range_price')
+def chosen_range_price():
+    return render_template('chosen_range_price.html')
 
 
-@app.route('/query', methods=['POST'])
-def query_db():
+@app.route('/chosen_range_price_query', methods=['POST'])
+def chosen_range_price_query():
     with open('sql_templates/share_query.sql', 'r') as f:
         query_template = f.read()
     codes = request.form['codes']
@@ -62,7 +62,7 @@ def query_db():
     res = pd.read_sql(query, engine)
     if 'show_table' in request.form.keys():
         return render_template(
-            'show_table.html',
+            'chosen_range_price.html',
             res_table=res.to_html(index=False)
         )
     elif 'download' in request.form.keys():
@@ -73,20 +73,20 @@ def query_db():
         return response
 
 
-@app.route('/last_11_business')
-def last_11_business():
-    return render_template('last_11_business.html')
+@app.route('/quick_recent_price')
+def quick_recent_price():
+    return render_template('quick_recent_price.html')
 
 
-@app.route('/download_last_11_business', methods=['POST'])
-def download_last_11_business():
+@app.route('/quick_recent_price_query', methods=['POST'])
+def quick_recent_price_query():
     with open('sql_templates/share_query.sql', 'r') as f:
         query_template = f.read()
     last_date_query = '''
         select max("date") as max_date from share_price;
     '''
     last_date = pd.read_sql(last_date_query, engine).iloc[0, 0]
-    last_business_day = last_date - 10 * asx_dayoffset
+    last_business_day = last_date - 64 * asx_dayoffset
     start_date = last_business_day.strftime('%Y%m%d')
     end_date = last_date.strftime('%Y%m%d')
     codes = request.form['codes']
@@ -109,7 +109,7 @@ def download_last_11_business():
     res = res.sort_values(by=['code', 'date'])
     if 'show_table' in request.form.keys():
         return render_template(
-            'last_11_business.html',
+            'quick_recent_price.html',
             res_table=res.to_html(index=False)
         )
     elif 'download' in request.form.keys():

@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-  <form action="{{ url_for('download_last_11_business') }}" method="post" class="query">
+  <form action="{{ url_for('quick_recent_price_query') }}" method="post" class="query">
     <dl>
         <dt>Codes (Separated by comma):</dt>
       <dd><input type="text" size="30" name="codes"></dd>
