@@ -10,8 +10,8 @@ from flask import make_response
 # from flask import abort
 from flask import render_template
 # from flask import flash
-from app import engine
-from utils import ASXTradingCalendar
+from utils.utils import engine
+from utils.utils import ASXTradingCalendar
 
 asx_trading_calendar = ASXTradingCalendar()
 asx_dayoffset = CustomBusinessDay(calendar=asx_trading_calendar)
@@ -40,13 +40,18 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/chosen_range_price')
-def chosen_range_price():
-    return render_template('chosen_range_price.html')
+@app.route('/about_us')
+def about_us():
+    return render_template('home.html')
 
 
-@app.route('/chosen_range_price_query', methods=['POST'])
-def chosen_range_price_query():
+@app.route('/custom_time_window')
+def custom_time_window():
+    return render_template('custom_time_window.html')
+
+
+@app.route('/custom_time_window_query', methods=['POST'])
+def custom_time_window_query():
     with open('sql_templates/share_query.sql', 'r') as f:
         query_template = f.read()
     codes = request.form['codes']
@@ -62,7 +67,7 @@ def chosen_range_price_query():
     res = pd.read_sql(query, engine)
     if 'show_table' in request.form.keys():
         return render_template(
-            'chosen_range_price.html',
+            'custom_time_window.html',
             res_table=res.to_html(index=False)
         )
     elif 'download' in request.form.keys():
