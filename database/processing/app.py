@@ -1,6 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from . import secrets
+from .settings import DBHOST
+from .settings import DBUSER
+from .settings import DBPASSWD
+from .settings import DBNAME
 
 
 def make_sa_conn_str(host, user, password, dbname, **options):
@@ -26,10 +29,10 @@ def make_sa_conn_str(host, user, password, dbname, **options):
     return conn_str
 
 sqlalchemy_url = make_sa_conn_str(
-    host=secrets.host,
-    user=secrets.user,
-    password=secrets.password,
-    dbname=secrets.dbname,
+    host=DBHOST,
+    user=DBUSER,
+    password=DBPASSWD,
+    dbname=DBNAME,
 )
 
 engine = create_engine(sqlalchemy_url, echo=False)
