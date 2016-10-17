@@ -81,3 +81,15 @@ sqlalchemy_url = make_sa_conn_str(
 
 engine = create_engine(sqlalchemy_url, echo=False)
 Session = sessionmaker(bind=engine)
+
+
+def getCommaSeparatedItemsQuoted(comma_separated_str):
+    comma_separated_str = comma_separated_str.replace(',', "','")
+    comma_separated_str = "'" + comma_separated_str + "'"
+    return comma_separated_str
+
+
+def getListQuoted(item_list):
+    item_str = ','.join(item_list)
+    item_str = getCommaSeparatedItemsQuoted(item_str)
+    return item_str

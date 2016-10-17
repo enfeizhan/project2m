@@ -12,6 +12,8 @@ from flask import render_template
 # from flask import flash
 from utils.utils import engine
 from utils.utils import ASXTradingCalendar
+from utils.utils import getListQuoted
+from utils.utils import getCommaSeparatedItemsQuoted
 
 asx_trading_calendar = ASXTradingCalendar()
 asx_dayoffset = CustomBusinessDay(calendar=asx_trading_calendar)
@@ -55,16 +57,23 @@ def custom_time_window_query():
     with open('sql_templates/share_query.sql', 'r') as f:
         query_template = f.read()
     codes = request.form['codes']
+    if codes == '':
+        with open('sql_templates/share_code_query.sql', 'r') as f:
+            share_code_query = f.read()
+        codes = pd.read_sql(share_code_query, engine)
+        codes = codes.loc[:, 'share_codes'].tolist()
+        codes = getListQuoted(codes)
+    else:
+        codes = getCommaSeparatedItemsQuoted(codes)
     start_date = request.form['start_date']
     end_date = request.form['end_date']
-    codes = codes.replace(',', "','")
-    codes = "'" + codes + "'"
     query = query_template.format(
         codes=codes,
         start_date=start_date,
         end_date=end_date
     )
     res = pd.read_sql(query, engine)
+    res = res.sort_values(by=['code', 'date'])
     if 'show_table' in request.form.keys():
         return render_template(
             'custom_time_window.html',
@@ -96,15 +105,13 @@ def quick_recent_price_query():
     end_date = last_date.strftime('%Y%m%d')
     codes = request.form['codes']
     if codes == '':
-        codes = pd.read_csv(
-            'http://www.asx.com.au/asx/research/ASXListedCompanies.csv',
-            skiprows=1
-        )
-        codes = (codes.loc[:, 'ASX code'] + '.AX').tolist()
-        codes = '\',\''.join(codes)
+        with open('sql_templates/share_code_query.sql', 'r') as f:
+            share_code_query = f.read()
+        codes = pd.read_sql(share_code_query, engine)
+        codes = codes.loc[:, 'share_codes'].tolist()
+        codes = getListQuoted(codes)
     else:
-        codes = codes.replace(',', "','")
-    codes = "'" + codes + "'"
+        codes = getCommaSeparatedItemsQuoted(codes)
     query = query_template.format(
         codes=codes,
         start_date=start_date,
