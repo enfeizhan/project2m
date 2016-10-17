@@ -214,6 +214,16 @@ class LkpSource(Base, CSVLoadable):
     create_date = Column(Date)
 
 
+class TradeSimulator(Base, CSVLoadable):
+    __tablename__ = 'trade_simulator'
+    code = Column(String(20), primary_key=True, nullable=False)
+    source_id = Column(Integer, primary_key=True, nullable=False)
+    country_id = Column(Integer, nullable=False)
+    price_type_id = Column(Integer, nullable=False)
+    open_date = Column(Date, nullable=False)
+    close_date = Column(Date, nullable=True)
+
+
 def create_all_tables():
     Base.metadata.create_all(engine)
 
@@ -232,3 +242,5 @@ Index('idx_action_date', Action.date)
 Index('idx_action_source_id', Action.source_id)
 Index('idx_action_country_id', Action.country_id)
 Index('idx_action_action_type_id', Action.action_type_id)
+Index('idx_trade_simulator_code', TradeSimulator.code)
+Index('idx_trade_simulator_source_id', TradeSimulator.source_id)
