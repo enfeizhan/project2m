@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block body %}
+  <form action="{{ url_for('quick_recent_price_query') }}" method="post" class="query">
+    <dl>
+        <dt>Codes (Separated by comma):</dt>
+      <dd><input type="text" size="30" name="codes"></dd>
+      <dd>
+         <input type="submit" value="Download result" name="download">
+         <input type="submit" value="Show table" name="show_table">
+      </dd>
+      </dl>
+  </form>
+  {% if res_table %}
+    <div>{{ res_table|safe }}</div>
+  {% endif %}
+{% endblock %}

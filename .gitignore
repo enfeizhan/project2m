@@ -3,3 +3,6 @@
 *.log
 *.txt
 *.csv
+secret*
+__pycache__
+.ipynb_checkpoints

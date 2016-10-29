@@ -1,0 +1,13 @@
+<!doctype html>
+<title>Project2M</title>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+<div class="page">
+  <h2>Project2M Dashboard</h2>
+  <div class="metanav">
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('about_us') }}">About Us</a>
+    <a href="{{ url_for('custom_time_window') }}">Custom Time Window</a>
+    <a href="{{ url_for('quick_recent_price') }}">Quick Recent Price</a>
+  </div>
+  {% block body %}{% endblock %}
+</div>
